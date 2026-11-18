@@ -1,5 +1,5 @@
-// Кристалл в hero: WebGL-шейдер поверх картинки дизайнера.
-// Пробуждение: фронт света идёт по осколку от широкого края к хвосту (uWake 0→1, линейно).
+// Персонаж в hero: WebGL-шейдер поверх арта дизайнера (макет v2), с честной прозрачностью.
+// Пробуждение: фронт света проводит фигуру из тёмного силуэта в цвет (uWake 0→1, линейно).
 // После: медленный перелив по граням, лёгкий параллакс и узкий блик за курсором (только десктоп).
 // Рендер только пока hero виден и вкладка активна; в покое — каждый второй кадр.
 
@@ -31,8 +31,8 @@ vec3 prism(float t){ return .55 + .45*cos(6.2831*(t + vec3(0., .33, .67))); }
 vec4 tex(vec2 p){
   if (p.x < 0. || p.x > 1. || p.y < 0. || p.y > 1.) return vec4(0.);
   vec4 c = texture2D(uTex, p);
-  // мягкие края картинки; низ гасим слабо, чтобы хвост доходил до кнопок, как в макете
-  float fade = smoothstep(1., .9, p.y) * smoothstep(0., .06, p.y) * smoothstep(0., .18, p.x);
+  // персонаж: снизу мягкий уход перед плашкой stats (в макете обрезан на y 760 из 125…890)
+  float fade = 1. - smoothstep(.76, .84, p.y);
   return vec4(c.rgb * c.a * fade, c.a * fade);
 }
 
@@ -40,10 +40,10 @@ void main(){
   vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
   vec2 p = (px - uRect.xy) / uRect.zw;
   // ранний выход за пределами картинки (с запасом на параллакс)
-  if (any(lessThan(p, vec2(-.02))) || any(greaterThan(p, vec2(1.02)))) { gl_FragColor = vec4(0., 0., 0., 1.); return; }
+  if (any(lessThan(p, vec2(-.02))) || any(greaterThan(p, vec2(1.02)))) { gl_FragColor = vec4(0.); return; }
 
   float depth = .4 + .6 * smoothstep(.3, 1., p.x);
-  p -= uMouse * vec2(.008, -.014) * depth;
+  p -= uMouse * vec2(.006, -.006) * depth;
 
   float axis = p.x * .94 + p.y * 1.02 * (uRect.w / uRect.z);
   vec2 dir = normalize(vec2(1., -.36));
@@ -56,20 +56,20 @@ void main(){
   float n = noise(vec2(axis * 9. - uTime * .12, p.y * 6. + uTime * .04));
   float n2 = noise(p * vec2(18., 30.) + uTime * .06);
   float hi = smoothstep(.25, .85, lum);
-  col += col * hi * (n - .45) * 1.1;
-  col = mix(col, col * prism(n * .8 + axis * .6 + uTime * .015) * 1.6, .35 * hi);
-  col += vec3(1., .9, .8) * pow(n2, 14.) * hi * 3.;
+  col += col * hi * (n - .45) * .35;
+  col = mix(col, col * prism(n * .8 + axis * .6 + uTime * .015) * 1.5, .14 * hi); // лёгкий перелив только по светящейся броне
+  col += vec3(1., .9, .8) * pow(n2, 14.) * hi * a * 1.5;
 
   // фронт пробуждения: ось от широкого края (A) к хвосту (B), в изотропных координатах
   vec2 q = p * vec2(1., uRect.w / uRect.z);
-  vec2 A = vec2(1.02, .02), B = vec2(.30, .31);
+  vec2 A = vec2(1.0, .05), B = vec2(.25, .5);
   vec2 ab = B - A;
   float s = dot(q - A, ab) / dot(ab, ab) + (n - .5) * .025;
   float d = mix(-.08, 1.35, uWake) - s;               // > 0: уже освещено
   float lit = smoothstep(-.015, .015, d);
   float after = lit * exp(-max(d, 0.) * 7.) * .45 * (1. - .6 * hi); // пересвет за кромкой: на тёмных гранях, не на ярких
   float rim = exp(-d * d / .002) * smoothstep(.04, .3, lum) * (.4 + hi);  // кромка мягкая и только по светлым граням
-  vec3 pre = vec3(.42, .30, .62) * lum * .1;          // до фронта — тёмный фиолетовый силуэт
+  vec3 pre = vec3(.10, .07, .16) * a + vec3(.42, .30, .62) * lum * .12; // до фронта — тёмный фиолетовый силуэт
   col = mix(pre, col * (1. + after), lit) + vec3(1., .86, .62) * rim * 1.1;
 
   // узкий блик за курсором под углом граней (115°)
@@ -77,11 +77,12 @@ void main(){
   float k = dot(px - uPointer, gd) / uRect.z;
   col += vec3(1., .9, .72) * exp(-k * k / .00012) * hi * a * .9 * uGlint;
 
-  gl_FragColor = vec4(col * uFade * (1. - uScroll * .7), 1.);
+  float k2 = uFade * (1. - uScroll * .7);
+  gl_FragColor = vec4(col * k2, a * k2); // премультиплированная альфа: персонаж не просвечивает
 }`;
 
 export function initCrystal(canvas, { src, reduced, mobile }) {
-  const gl = canvas.getContext('webgl', { antialias: false, alpha: false, premultipliedAlpha: false, powerPreference: 'high-performance' });
+  const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' });
   if (!gl) return null;
 
   const sh = (type, s) => { const o = gl.createShader(type); gl.shaderSource(o, s); gl.compileShader(o);
@@ -151,18 +152,18 @@ export function initCrystal(canvas, { src, reduced, mobile }) {
   window.addEventListener('resize', resize);
   resize();
 
-  // Позиция из SVG макета (1440): x −280, y 122, ширина 1913. Считаем в rem от левого края контейнера
-  // (контейнер 81.25rem, его левый край в макете на x 70), чтобы на любой ширине кристалл стоял как в макете.
+  // Позиция из SVG макета v2 (1440): персонаж x 471, y 125, ширина 1370 (отражён). Считаем в rem от левого края контейнера
+  // (контейнер 81.25rem, его левый край в макете на x 70), чтобы на любой ширине персонаж стоял как в макете.
   function rect() {
     const ar = state.imgW / state.imgH;
     if (W <= 860) {
-      const w = W * 2.3;
-      return [(W - w + W * 0.72) * dpr, -70 * dpr, w * dpr, (w / ar) * dpr];
+      const w = W * 1.7;
+      return [(W - w * 0.62) * dpr, 40 * dpr, w * dpr, (w / ar) * dpr];
     }
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const wrapLeft = Math.max((W - 81.25 * rem) / 2, 0);
-    const w = 119.56 * rem;
-    return [(wrapLeft - 21.875 * rem) * dpr, 7.625 * rem * dpr, w * dpr, (w / ar) * dpr];
+    const w = 85.65 * rem;
+    return [(wrapLeft + 25.06 * rem) * dpr, 7.824 * rem * dpr, w * dpr, (w / ar) * dpr];
   }
 
   if (!mobile && !reduced) {

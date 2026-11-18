@@ -65,7 +65,7 @@ addEventListener('resize', inkNow);
 
 /* ---------------- hero: момент A «пробуждение» ---------------- */
 const crystal = (() => {
-  try { return initCrystal($('[data-crystal]'), { src: 'img/crystal-hero.webp', reduced, mobile }); }
+  try { return initCrystal($('[data-crystal]'), { src: 'img/hero-character.webp', reduced, mobile }); }
   catch (err) { console.warn(err); return null; }
 })();
 if (!crystal) root.classList.add('no-gl');
@@ -354,14 +354,6 @@ if (!reduced) {
   }
 }
 
-const screen = $('.screen');
-if (fine && !reduced && screen) {
-  screen.addEventListener('pointermove', (e) => {
-    const r = screen.getBoundingClientRect();
-    screen.style.setProperty('--cx', ((e.clientX - r.left) / r.width - 0.5) * -40 + 'px');
-    screen.style.setProperty('--cy', ((e.clientY - r.top) / r.height - 0.5) * -30 + 'px');
-  });
-}
 $$('.sponsor').forEach((s) => {
   s.style.setProperty('--logo', `url('${new URL($('img', s).getAttribute('src'), document.baseURI).href}')`);
   s.addEventListener('pointermove', (e) => {

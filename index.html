@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="preload" as="image" href="img/crystal-hero.webp" />
+  <link rel="preload" as="image" href="img/hero-character.webp" />
 </head>
 <body>
   <div class="bg" aria-hidden="true">
@@ -61,12 +61,10 @@
     <section class="hero" id="overview" data-section="overview">
       <div class="hero__stage">
         <canvas class="hero__gl" data-crystal aria-hidden="true"></canvas>
-        <img class="hero__fallback" src="img/crystal-hero.webp" alt="" aria-hidden="true" />
+        <img class="hero__fallback" src="img/hero-character.webp" alt="" aria-hidden="true" />
         <div class="hero__num" aria-hidden="true" data-num>
           <span class="hero__num-base">05</span>
         </div>
-        <!-- Сюда встанет персонаж: <img class="hero__character" src="img/character.webp" alt=""> -->
-        <div class="hero__character-slot" data-character></div>
       </div>
 
       <div class="wrap hero__content">
@@ -75,7 +73,7 @@
           <span class="line" aria-hidden="true"><span class="word">LEGENDS</span></span>
           <span class="line" aria-hidden="true"><span class="word">AWAKEN</span></span>
         </h1>
-        <p class="hero__lead">16 teams. One title. The next chapter begins.</p>
+        <p class="hero__lead">16 teams. One title. The next chapter begins</p>
         <div class="hero__dates">
           <span>20 NOV — 10 DEC</span>
           <svg class="hero__arrow" viewBox="0 0 110 12" aria-hidden="true"><path d="M0 0H110L90 12L95 3H0Z" /></svg>
@@ -204,8 +202,8 @@
 
         <div class="watch">
           <a class="screen shape" href="#" data-twitch aria-label="Open the broadcast on Twitch">
-            <div class="screen__crystal" aria-hidden="true"></div>
-            <div class="screen__scan" aria-hidden="true"></div>
+            <img class="screen__bg" src="img/watch-offline.webp" alt="" aria-hidden="true" loading="lazy" width="1600" height="900" />
+            <span class="screen__dim" aria-hidden="true"></span>
             <span class="screen__play">
               <svg class="screen__ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="47" /></svg>
               <svg class="screen__tri" viewBox="0 0 20 22" aria-hidden="true"><path d="M2 2l16 9-16 9z" /></svg>
@@ -238,7 +236,7 @@
   </main>
 
   <footer class="foot">
-    <div class="foot__crystal" aria-hidden="true" data-foot-crystal></div>
+    <div class="foot__crystal" aria-hidden="true" data-foot-crystal><i class="foot__crystal-l"></i><i class="foot__crystal-r"></i></div>
     <div class="wrap foot__row">
       <img class="foot__logo" src="img/lpl.png" alt="Legends Premier League" width="120" height="40" />
       <span class="foot__sep"></span>
