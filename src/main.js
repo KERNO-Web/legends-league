@@ -3,7 +3,6 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CustomEase } from 'gsap/CustomEase';
 import { initCrystal } from './fx/crystal.js';
-import { initSound } from './fx/sound.js';
 import { TEAMS, DAYS, ZONES, TWITCH_URL, RULES_URL, SEASON_START, MATCH_MINUTES } from './data.js';
 
 // «Сейчас»: можно подменить для показа/проверки — ?now=2026-11-20T10:30:00Z
@@ -403,6 +402,3 @@ if (!reduced) {
   gsap.fromTo(fl, { rotate: -5, y: 50, transformOrigin: '0% 100%' }, { rotate: 0, y: 0, ease: 'none', scrollTrigger: st });
   gsap.fromTo(fr, { rotate: 5, y: 50, transformOrigin: '100% 100%' }, { rotate: 0, y: 0, ease: 'none', scrollTrigger: { ...st } });
 }
-
-/* ---------------- звук: всегда включён, едва слышно (старт с первого действия) ---------------- */
-initSound();
