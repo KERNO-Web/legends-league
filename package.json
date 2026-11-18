@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --port 5195 --host",
     "build": "vite build",
-    "preview": "vite preview --port 5195",
+    "preview": "vite preview --port 5196 --strictPort",
     "assets": "node scripts/assets.mjs"
   },
   "dependencies": {

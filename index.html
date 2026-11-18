@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Legends Premier League · Season 5</title>
+  <script>if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('m')</script>
   <meta name="description" content="Legends Premier League Season 5. League of Legends tournament: 16 teams, €20,000 prize pool, Swiss stage and playoffs. Online, Europe. 20 Nov — 10 Dec." />
   <meta name="theme-color" content="#120f19" />
   <meta name="robots" content="noindex, nofollow" />
@@ -90,6 +91,7 @@
 
       <div class="wrap">
         <dl class="stats shape" data-stats>
+          <span class="stats__glow" aria-hidden="true"></span>
           <div class="stats__item">
             <dt>Prize pool</dt>
             <dd>€20,000</dd>
@@ -137,7 +139,7 @@
               <ul class="tz__list" role="listbox" data-tz-list hidden></ul>
             </div>
           </div>
-          <p class="mc__round" data-round></p>
+          
           <div class="mc__rows" data-rows aria-live="polite"></div>
         </div>
       </div>
@@ -210,12 +212,7 @@
             </span>
             <span class="screen__label">Broadcast starts</span>
             <strong class="screen__date">20 November</strong>
-            <span class="countdown" data-countdown aria-label="Time until broadcast">
-              <span><b data-cd="d">00</b><small>days</small></span>
-              <span><b data-cd="h">00</b><small>hrs</small></span>
-              <span><b data-cd="m">00</b><small>min</small></span>
-              <span><b data-cd="s">00</b><small>sec</small></span>
-            </span>
+            <span class="countdown" data-countdown aria-live="polite"></span>
           </a>
           <div class="watch__copy">
             <h3>Your front-row seat</h3>

@@ -47,11 +47,11 @@ export const DAYS = [
     ],
   },
   {
-    id: '2026-11-22', label: '22 NOV', round: 'Swiss · Round 2 · 1–0 pool',
+    id: '2026-11-22', label: '22 NOV', round: 'Swiss · Round 2', pool: '1–0',
     matches: [[null, null, '09:00'], [null, null, '12:00'], [null, null, '15:00'], [null, null, '18:00']],
   },
   {
-    id: '2026-11-23', label: '23 NOV', round: 'Swiss · Round 2 · 0–1 pool',
+    id: '2026-11-23', label: '23 NOV', round: 'Swiss · Round 2', pool: '0–1',
     matches: [[null, null, '09:00'], [null, null, '12:00'], [null, null, '15:00'], [null, null, '18:00']],
   },
 ].map((d) => ({

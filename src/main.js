@@ -1,42 +1,41 @@
 import './style.css';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { CustomEase } from 'gsap/CustomEase';
 import { initCrystal } from './fx/crystal.js';
 import { TEAMS, DAYS, ZONES, TWITCH_URL, RULES_URL, SEASON_START } from './data.js';
 
-gsap.registerPlugin(ScrollTrigger);
-const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+gsap.registerPlugin(ScrollTrigger, CustomEase);
+const root = document.documentElement;
+const reduced = !root.classList.contains('m'); // класс .m ставит инлайн-скрипт в <head>, если движение разрешено
 const fine = matchMedia('(pointer: fine)').matches;
+const mobile = !fine || innerWidth < 768;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-const root = document.documentElement;
 
-// Единый язык движения: одно появление снизу, одна кривая, одна длительность.
-const EASE = 'power3.out';
-const DUR = 0.9;
-const STEP = 0.08;
+// Токены движения (согласованы с дизайнером и моушн-дизайнером):
+// одна кривая, длительности 200/350/600/1200 мс, шаг 40–80 мс.
+CustomEase.create('main', '.16,1,.3,1');
+const T = { xs: 0.2, s: 0.35, m: 0.6, l: 1.2 };
 
-/* ---------------- ссылки ---------------- */
+/* ---------------- ссылки, меню ---------------- */
 $$('[data-twitch]').forEach((a) => { a.href = TWITCH_URL; a.target = '_blank'; a.rel = 'noopener'; });
 const rules = $('[data-rules]');
 if (rules) rules.href = RULES_URL;
 $$('a[href^="#"]').forEach((a) => a.addEventListener('click', () => closeMenu()));
 
-/* ---------------- hero ---------------- */
-const crystal = (() => {
-  try { return initCrystal($('[data-crystal]'), { src: 'img/crystal-hero.webp', reduced }); }
-  catch (err) { console.warn(err); return null; }
-})();
-if (!crystal) root.classList.add('no-gl');
-
-const heroItems = ['.hero .eyebrow', '.hero__title .line', '.hero__lead', '.hero__dates', '.hero__cta', '.stats'];
-if (!reduced) {
-  const tl = gsap.timeline({ delay: 0.15 });
-  tl.from(heroItems, { y: 28, opacity: 0, duration: DUR, ease: EASE, stagger: STEP });
-  if (crystal) { crystal.intro = 0; tl.to(crystal, { intro: 1, duration: 1.6, ease: 'power2.out' }, 0); }
-  // при уходе hero кристалл просто гаснет
-  ScrollTrigger.create({ trigger: '.hero', start: 'top top', end: 'bottom top', onUpdate: (s) => { if (crystal) crystal.scroll = s.progress; } });
+const menuBtn = $('[data-menu-btn]');
+const menuEl = $('[data-menu]');
+function openMenu() {
+  root.classList.add('menu-open'); menuBtn.setAttribute('aria-expanded', 'true'); menuEl.setAttribute('aria-hidden', 'false');
+  if (!reduced) gsap.fromTo('.menu__list a', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: T.m, ease: 'main', stagger: 0.05, delay: 0.1 });
 }
+function closeMenu() {
+  if (!root.classList.contains('menu-open')) return;
+  root.classList.remove('menu-open'); menuBtn.setAttribute('aria-expanded', 'false'); menuEl.setAttribute('aria-hidden', 'true');
+}
+menuBtn.addEventListener('click', () => (root.classList.contains('menu-open') ? closeMenu() : openMenu()));
+addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
 
 /* ---------------- навигация ---------------- */
 const nav = $('[data-nav]');
@@ -45,8 +44,7 @@ const links = $$('[data-link]');
 function moveInk(a) {
   if (!a || !ink) return;
   const pr = a.parentElement.getBoundingClientRect(), r = a.getBoundingClientRect();
-  ink.style.width = r.width + 'px';
-  ink.style.transform = `translateX(${r.left - pr.left}px)`;
+  ink.style.transform = `translateX(${r.left - pr.left}px) scaleX(${r.width / 100})`;
 }
 const onScroll = () => nav.classList.toggle('is-stuck', scrollY > 40);
 addEventListener('scroll', onScroll, { passive: true });
@@ -65,39 +63,81 @@ const inkNow = () => moveInk($('.nav__links a.is-active'));
 document.fonts?.ready.then(inkNow);
 addEventListener('resize', inkNow);
 
-// меню
-const menuBtn = $('[data-menu-btn]');
-const menuEl = $('[data-menu]');
-function openMenu() {
-  root.classList.add('menu-open'); menuBtn.setAttribute('aria-expanded', 'true'); menuEl.setAttribute('aria-hidden', 'false');
-  if (!reduced) gsap.fromTo('.menu__list a', { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: EASE, stagger: 0.05, delay: 0.1 });
-}
-function closeMenu() {
-  if (!root.classList.contains('menu-open')) return;
-  root.classList.remove('menu-open'); menuBtn.setAttribute('aria-expanded', 'false'); menuEl.setAttribute('aria-hidden', 'true');
-}
-menuBtn.addEventListener('click', () => (root.classList.contains('menu-open') ? closeMenu() : openMenu()));
-addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+/* ---------------- hero: момент A «пробуждение» ---------------- */
+const crystal = (() => {
+  try { return initCrystal($('[data-crystal]'), { src: 'img/crystal-hero.webp', reduced, mobile }); }
+  catch (err) { console.warn(err); return null; }
+})();
+if (!crystal) root.classList.add('no-gl');
 
-/* ---------------- появление секций ---------------- */
-// Заголовок, линия и подпись — одним движением; потом контент секции.
-function reveal(trigger, targets, extra) {
-  if (reduced) return;
-  const els = targets.filter(Boolean);
-  gsap.set(els, { y: 28, opacity: 0 });
+const titleWords = $$('.hero__title .word');
+const heroGroup = ['.hero__lead', '.hero__dates', '.hero__cta'];
+
+function wake(withFront) {
+  const front = mobile ? 0.7 : 0.9;           // фронт идёт с постоянной скоростью
+  const tl = gsap.timeline();
+  if (crystal) {
+    if (withFront) tl.fromTo(crystal, { wake: 0 }, { wake: 1, duration: front, ease: 'none' }, 0);
+    else { crystal.wake = 1; tl.fromTo(crystal, { fade: 0 }, { fade: 1, duration: T.m, ease: 'main' }, 0); }
+  }
+  tl.to('.hero .eyebrow', { opacity: 1, duration: T.s, ease: 'main' }, 0)
+    .to(titleWords[0], { yPercent: 0, duration: T.m, ease: 'main' }, 0.12)
+    .to(titleWords[1], { yPercent: 0, duration: T.m, ease: 'main' }, 0.2)
+    .to(heroGroup, { y: 0, opacity: 1, duration: T.m, ease: 'main', stagger: 0.04 }, 0.42)
+    .to('.stats', { opacity: 1, duration: T.m, ease: 'main' }, 0.54)
+    .fromTo('.hero__arrow', { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: T.m, ease: 'main' }, 0.56);
+  // свет дошёл до хвоста (~0.78 с) — рамка stats загорается и гаснет; на телефоне stats ниже сгиба, пропускаем
+  if (!mobile && withFront) {
+    tl.to('.stats__glow', { opacity: 1, duration: T.s, ease: 'main' }, front * 0.86)
+      .to('.stats__glow', { opacity: 0, duration: T.m, ease: 'main' });
+  }
+  // после пробуждения включается блик за курсором
+  if (crystal && !mobile) tl.to(crystal, { glint: 1, duration: T.m, ease: 'main' }, front);
+  return tl;
+}
+
+if (reduced) {
+  if (crystal) crystal.kick();
+} else {
+  gsap.set(titleWords, { y: 0, yPercent: 105 });
+  gsap.set(heroGroup, { y: 12 });
+  // старт, когда готовы текстура и шрифты и вкладка видима; если текстура опаздывает (>700 мс) — без фронта
+  const visibleNow = () => new Promise((r) => {
+    if (!document.hidden) return r();
+    document.addEventListener('visibilitychange', function f() { if (!document.hidden) { document.removeEventListener('visibilitychange', f); r(); } });
+  });
+  const fonts = document.fonts ? document.fonts.ready : Promise.resolve();
+  const tex = crystal ? Promise.race([crystal.ready.then((ok) => ok !== false), new Promise((r) => setTimeout(() => r(false), 700))]) : Promise.resolve(false);
+  Promise.all([tex, Promise.race([fonts, new Promise((r) => setTimeout(r, 700))]), visibleNow()]).then(([texOk]) => wake(texOk));
+}
+
+// уход hero: кристалл гаснет
+ScrollTrigger.create({ trigger: '.hero', start: 'top top', end: 'bottom top', onUpdate: (s) => { if (crystal) { crystal.scroll = s.progress; crystal.kick(); } } });
+
+/* ---------------- общее правило появления секций ---------------- */
+// Заголовок с подписью, потом контент одним блоком. y 16 → 0, 600 мс, шаг 60, вся группа ≤ 750 мс.
+// Быстрый скролл/якорь или секция уже выше экрана — сразу финал, без анимации.
+function reveal(trigger, els, { start = 'top 85%', onShow } = {}) {
+  els = els.filter(Boolean);
+  if (reduced || !els.length) { onShow?.(true); return; }
+  const el = typeof trigger === 'string' ? $(trigger) : trigger;
+  if (el.getBoundingClientRect().bottom < 0) { onShow?.(true); return; }
+  gsap.set(els, { y: 16, opacity: 0 });
   ScrollTrigger.create({
-    trigger, start: 'top 88%', once: true,
-    onEnter: () => {
-      gsap.to(els, { y: 0, opacity: 1, duration: DUR, ease: EASE, stagger: STEP, clearProps: 'transform' });
-      extra?.();
+    trigger: el, start, once: true,
+    onEnter: (self) => {
+      const fast = Math.abs(self.getVelocity()) > 3000;
+      if (fast) { gsap.set(els, { y: 0, opacity: 1, clearProps: 'transform' }); onShow?.(true); return; }
+      gsap.to(els, { y: 0, opacity: 1, duration: T.m, ease: 'main', stagger: 0.06, clearProps: 'transform' });
+      onShow?.(false);
     },
   });
 }
 $$('.head').forEach((head) => {
   const line = $('.head__line i', head);
-  if (reduced) { gsap.set(line, { scaleX: 1 }); return; }
-  gsap.set(line, { scaleX: 0 });
-  reveal(head, [$('.head__title', head), $('.head__aside', head)], () => gsap.to(line, { scaleX: 1, duration: DUR * 1.2, ease: EASE }));
+  reveal(head, [$('.head__title', head), $('.head__aside', head)], {
+    onShow: (instant) => { if (!instant) gsap.fromTo(line, { scaleX: 0 }, { scaleX: 1, duration: T.m, ease: 'main', delay: 0.06 }); },
+  });
 });
 
 /* ---------------- match center ---------------- */
@@ -105,7 +145,6 @@ const state = { tab: 'upcoming', day: DAYS[0].id, zone: ZONES[0] };
 try { const z = localStorage.getItem('lpl-zone'); if (z) state.zone = ZONES.find((x) => x.id === z) || state.zone; } catch {}
 const rowsEl = $('[data-rows]');
 const daysEl = $('[data-days]');
-const roundEl = $('[data-round]');
 
 daysEl.innerHTML = DAYS.map((d, i) => `<button class="chip${i ? '' : ' is-on'}" role="tab" aria-selected="${!i}" data-day="${d.id}"><span>${d.label}</span></button>`).join('') + '<span class="seg__ink" aria-hidden="true"></span>';
 $$('[data-seg="tab"] .chip').forEach((b) => { b.innerHTML = `<span>${b.textContent}</span>`; });
@@ -122,9 +161,9 @@ function placeInk(seg, instant) {
 const fmtTime = (d) => new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: state.zone.tz }).format(d);
 const fmtDay = (d) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: state.zone.tz }).format(d).toUpperCase();
 
-function sideHTML(t, cls) {
-  if (!t) return `<div class="side ${cls} side--tbd"><span class="tbd">?</span><span>TBD</span></div>`;
-  return `<div class="side ${cls}"><img src="${t.logo}" alt="" width="40" height="40" loading="lazy"><span>${t.name}</span></div>`;
+function sideHTML(t, cls, pool) {
+  if (!t) return `<div class="side ${cls} side--tbd"><span class="tbd" aria-hidden="true"></span><span>${pool ? pool + ' team' : 'TBD'}</span></div>`;
+  return `<div class="side ${cls}"><img src="${t.logo}" alt="" width="60" height="60" loading="lazy"><span title="${t.name}">${t.name}</span></div>`;
 }
 function rowsHTML() {
   if (state.tab === 'results') {
@@ -135,7 +174,7 @@ function rowsHTML() {
     const label = `${m.a ? m.a.name : 'TBD'} vs ${m.b ? m.b.name : 'TBD'}, ${fmtTime(m.at)} ${state.zone.label}`;
     const shift = fmtDay(m.at) !== day.label ? `<small class="time__day">${fmtDay(m.at)}</small>` : '';
     return `<article class="match shape" aria-label="${label}">
-      ${sideHTML(m.a, 'side--a')}<span class="vs">VS</span>${sideHTML(m.b, 'side--b')}
+      ${sideHTML(m.a, 'side--a', day.pool)}<span class="vs">VS</span>${sideHTML(m.b, 'side--b', day.pool)}
       <time class="time" datetime="${m.at.toISOString()}"><span>${fmtTime(m.at)}${shift}</span></time>
     </article>`;
   }).join('');
@@ -146,18 +185,21 @@ function bindRows() {
     const b = r.getBoundingClientRect(); r.style.setProperty('--hx', e.clientX - b.left + 'px');
   }));
 }
-// смена вкладки/дня: короткое затухание и появление, без наложений
+// смена дня/вкладки: строки уходят за 200 мс, новые входят по 350 мс с шагом 40
 let swap = null;
 function renderRows(animate = true) {
-  const day = DAYS.find((d) => d.id === state.day);
-  const apply = () => { roundEl.textContent = state.tab === 'results' ? 'Results' : day.round; rowsEl.innerHTML = rowsHTML(); bindRows(); };
-  if (!animate || reduced) { apply(); return; }
+  const apply = () => { rowsEl.innerHTML = rowsHTML(); bindRows(); };
   swap?.kill();
+  if (!animate) { apply(); return; }
+  if (reduced) {
+    swap = gsap.timeline().to(rowsEl, { opacity: 0, duration: 0.15 }).add(apply).to(rowsEl, { opacity: 1, duration: 0.15 });
+    return;
+  }
+  const old = [...rowsEl.children];
   swap = gsap.timeline()
-    .to([roundEl, rowsEl], { opacity: 0, duration: 0.18, ease: 'power1.in' })
+    .to(old, { y: -12, opacity: 0, duration: T.xs, ease: 'main' })
     .add(apply)
-    .fromTo([...rowsEl.children], { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: EASE, stagger: 0.04, clearProps: 'transform' })
-    .to([roundEl, rowsEl], { opacity: 1, duration: 0.01 }, '<');
+    .add(() => gsap.fromTo([...rowsEl.children], { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: T.s, ease: 'main', stagger: 0.04, clearProps: 'transform' }));
 }
 
 function select(seg, btn) {
@@ -182,7 +224,6 @@ daysEl.addEventListener('click', (e) => {
   renderRows();
 });
 
-// часовой пояс
 const tzBtn = $('[data-tz-btn]'), tzList = $('[data-tz-list]'), tzLabel = $('[data-tz-label]');
 const localName = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop().replace(/_/g, ' '); } catch { return 'Local'; } })();
 tzList.innerHTML = ZONES.map((z) => `<li role="option" data-zone="${z.id}" aria-selected="${z.id === state.zone.id}">${z.label}<span>${z.id === 'local' ? localName : z.tz.split('/')[1]}</span></li>`).join('');
@@ -206,22 +247,24 @@ requestAnimationFrame(inks);
 document.fonts?.ready.then(inks);
 addEventListener('resize', inks);
 
-reveal('.mc', [...$$('.mc__bar'), roundEl, ...$$('.match', rowsEl)]);
+reveal('.mc', [$('.mc')]);
 
-/* ---------------- команды: голографические карточки ---------------- */
+/* ---------------- команды: момент B «голограмма» ---------------- */
 const teamsEl = $('[data-teams]');
 teamsEl.innerHTML = TEAMS.map((t) => `
   <li class="team shape">
     <div class="team__in">
       <div class="team__logo" style="--logo:url('${new URL(t.logo, document.baseURI).href}')">
-        <img src="${t.logo}" alt="" width="84" height="84" loading="lazy">
+        <img src="${t.logo}" alt="" width="96" height="96" loading="lazy">
         <span class="holo" aria-hidden="true"></span>
+        <span class="wave" aria-hidden="true"><i></i></span>
       </div>
       <span class="team__name">${t.name}</span>
     </div>
     <span class="team__glare" aria-hidden="true"></span>
   </li>`).join('');
 const teamCards = $$('.team', teamsEl);
+const waves = new Map();
 
 if (fine && !reduced) {
   teamsEl.classList.add('has-spot');
@@ -234,7 +277,10 @@ if (fine && !reduced) {
   });
   teamsEl.addEventListener('pointerleave', () => teamCards.forEach((c) => c.style.setProperty('--sx', '-999px')));
   teamCards.forEach((c) => {
-    c.addEventListener('pointerenter', () => { c.classList.add('is-tilt'); c.style.setProperty('--o', 1); });
+    c.addEventListener('pointerenter', () => {
+      const w = waves.get(c); if (w) { w.kill(); gsap.to($('.wave i', c), { opacity: 0, duration: T.xs }); }
+      c.classList.add('is-tilt'); c.style.setProperty('--o', 1);
+    });
     c.addEventListener('pointermove', (e) => {
       const r = c.getBoundingClientRect();
       const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
@@ -249,24 +295,67 @@ if (fine && !reduced) {
       c.style.setProperty('--rx', '0deg'); c.style.setProperty('--ry', '0deg'); c.style.setProperty('--o', 0);
     });
   });
+} else if (reduced && fine) {
+  // reduced-motion: перелив при наведении остаётся (это отклик), наклона нет
+  teamCards.forEach((c) => {
+    c.addEventListener('pointerenter', () => c.style.setProperty('--o', 1));
+    c.addEventListener('pointerleave', () => c.style.setProperty('--o', 0));
+  });
 }
-// карточки появляются построчно, без анимации transform (его использует наклон)
+
+// одна карточка: блик проходит по силуэту логотипа за 700 мс
+function waveCard(c, delay) {
+  const i = $('.wave i', c);
+  const tl = gsap.timeline({ delay })
+    .fromTo(i, { xPercent: -100 }, { xPercent: 100, duration: 0.7, ease: 'none' }, 0)
+    .fromTo(i, { opacity: 0 }, { opacity: 0.85, duration: T.xs, ease: 'none' }, 0)
+    .to(i, { opacity: 0, duration: T.xs, ease: 'none' }, 0.5);
+  waves.set(c, tl);
+}
 if (!reduced) {
-  gsap.set(teamCards, { opacity: 0 });
-  ScrollTrigger.create({ trigger: teamsEl, start: 'top 88%', once: true, onEnter: () => {
-    const cols = getComputedStyle(teamsEl).gridTemplateColumns.split(' ').length;
-    teamCards.forEach((c, i) => gsap.to(c, { opacity: 1, duration: DUR, ease: EASE, delay: Math.floor(i / cols) * STEP }));
-  } });
+  const cols = () => getComputedStyle(teamsEl).gridTemplateColumns.split(' ').length;
+  // карточки появляются по общему правилу (только opacity — transform занят наклоном)
+  if (teamsEl.getBoundingClientRect().bottom > 0) {
+    gsap.set(teamCards, { opacity: 0 });
+    ScrollTrigger.create({ trigger: teamsEl, start: 'top 85%', once: true, onEnter: (self) => {
+      const fast = Math.abs(self.getVelocity()) > 3000;
+      const n = cols();
+      teamCards.forEach((c, i) => gsap.to(c, { opacity: 1, duration: fast ? 0 : T.m, ease: 'main', delay: fast ? 0 : Math.floor(i / n) * 0.06 }));
+    } });
+  }
+  if (mobile) {
+    // телефон: волна по рядам, внутри ряда слева направо
+    const n = cols();
+    for (let r = 0; r < teamCards.length; r += n) {
+      const row = teamCards.slice(r, r + n);
+      ScrollTrigger.create({ trigger: row[0], start: 'top 75%', once: true, onEnter: () => row.forEach((c, k) => waveCard(c, 0.3 + k * 0.06)) });
+    }
+  } else {
+    // десктоп: одна диагональная волна, когда сетка почти вся на экране
+    ScrollTrigger.create({ trigger: teamsEl, start: 'top 55%', once: true, onEnter: (self) => {
+      if (Math.abs(self.getVelocity()) > 3000) return;
+      const n = cols();
+      teamCards.forEach((c, i) => waveCard(c, ((i % n) + Math.floor(i / n)) * 0.06));
+    } });
+  }
 }
 
 /* ---------------- формат, трансляция, спонсоры, футер ---------------- */
-reveal('.road', $$('.road > li:not(.road__beam)'));
-reveal('.watch', [$('.screen'), $('.watch__copy h3'), $('.watch__copy p'), $('.watch__copy .btn')]);
-reveal('.sponsors', [...$$('.sponsor'), $('.sponsors__sep')]);
-reveal('.foot', $$('.foot__row > *'));
+reveal('.road', [$('.road')]);
+reveal('.watch', [$('.watch')]);
+reveal('.sponsors', [$('.sponsors')]);
+reveal('.foot__row', [$('.foot__row')], { start: 'top 95%' });
+// момент C: кристалл футера один раз проявляется
+if (!reduced) {
+  const fc = $('[data-foot-crystal]');
+  if (fc.getBoundingClientRect().bottom > 0) {
+    gsap.set(fc, { opacity: 0 });
+    ScrollTrigger.create({ trigger: '.foot', start: 'top 90%', once: true, onEnter: () => gsap.to(fc, { opacity: 1, duration: T.l, ease: 'main' }) });
+  }
+}
 
 const screen = $('.screen');
-if (fine && screen) {
+if (fine && !reduced && screen) {
   screen.addEventListener('pointermove', (e) => {
     const r = screen.getBoundingClientRect();
     screen.style.setProperty('--cx', ((e.clientX - r.left) / r.width - 0.5) * -40 + 'px');
@@ -280,19 +369,20 @@ $$('.sponsor').forEach((s) => {
   });
 });
 
-// обратный отсчёт: просто цифры, без анимации
-const cd = Object.fromEntries($$('[data-cd]').map((b) => [b.dataset.cd, b]));
+// обратный отсчёт одной строкой: «Starts in 2 d 8 h», меньше суток — «8 h 10 m», после старта — Live now
+const cdEl = $('[data-countdown]');
 const target = new Date(SEASON_START).getTime();
 function tick() {
   const s = Math.max(0, Math.floor((target - Date.now()) / 1000));
   if (s === 0) {
-    $('[data-countdown]').innerHTML = '<span><b class="live">● LIVE</b></span>';
+    cdEl.innerHTML = '<span class="live">Live now</span>';
     $('.screen__label').textContent = 'Broadcast is';
-    $('.screen__date').textContent = 'Live now';
+    $('.screen__date').textContent = 'Live';
     return false;
   }
-  const v = { d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 };
-  for (const k in v) cd[k].textContent = String(v[k]).padStart(2, '0');
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+  const txt = d >= 1 ? `Starts in ${d} d ${h} h` : h >= 1 ? `Starts in ${h} h ${m} m` : `Starts in ${m} m`;
+  if (cdEl.textContent !== txt) cdEl.textContent = txt;
   return true;
 }
-if (tick()) { const iv = setInterval(() => { if (!tick()) clearInterval(iv); }, 1000); }
+if (tick()) { const iv = setInterval(() => { if (!tick()) clearInterval(iv); }, 15000); }
