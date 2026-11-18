@@ -11,6 +11,8 @@ void main(){ gl_Position = vec4(a, 0., 1.); }`;
 const FRAG = `
 precision highp float;
 uniform sampler2D uTex;
+uniform sampler2D uMask;   // маска летящих осколков (отдельный слой глубины)
+uniform vec2 uShardOff;    // сдвиг слоя осколков (сильнее параллакса фигуры + покачивание)
 uniform vec2 uRes;        // px канваса
 uniform vec4 uRect;       // x, y, w, h картинки в px канваса (верх-лево)
 uniform vec2 uMouse;      // -1..1, сглаженный (параллакс)
@@ -43,12 +45,20 @@ float smoke(vec2 e, vec2 D, float seed){
   return body * smoothstep(-.012, .006, u) * (1. - smoothstep(L * .35, L, u)) * smoothstep(.32, .75, tear) * 1.5;
 }
 
-vec4 tex(vec2 p){
+vec4 raw(vec2 p){
   if (p.x < 0. || p.x > 1. || p.y < 0. || p.y > 1.) return vec4(0.);
   vec4 c = texture2D(uTex, p);
   // персонаж: снизу мягкий уход перед плашкой stats (в макете обрезан на y 760 из 125…890)
   float fade = 1. - smoothstep(.76, .84, p.y);
   return vec4(c.rgb * c.a * fade, c.a * fade);
+}
+float shardM(vec2 p){ return (p.x < 0. || p.x > 1. || p.y < 0. || p.y > 1.) ? 0. : texture2D(uMask, p).r; }
+// два слоя: фигура без осколков + осколки со своим сдвигом поверх
+vec4 tex(vec2 p){
+  vec4 b = raw(p) * (1. - shardM(p));
+  vec2 ps = p - uShardOff;
+  vec4 s = raw(ps) * shardM(ps);
+  return s + b * (1. - s.a);
 }
 
 void main(){
@@ -137,7 +147,7 @@ void main(){
   gl_FragColor = vec4(col * k2, clamp(a + extraA, 0., 1.) * k2); // премультиплированная альфа: персонаж не просвечивает
 }`;
 
-export function initCrystal(canvas, { src, reduced, mobile }) {
+export function initCrystal(canvas, { src, maskSrc, reduced, mobile }) {
   const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' });
   if (!gl) return null;
 
@@ -157,7 +167,7 @@ export function initCrystal(canvas, { src, reduced, mobile }) {
   gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
   const U = {};
-  ['uTex', 'uRes', 'uRect', 'uMouse', 'uPointer', 'uGlint', 'uTime', 'uScroll', 'uWake', 'uFade'].forEach((k) => (U[k] = gl.getUniformLocation(prog, k)));
+  ['uTex', 'uMask', 'uShardOff', 'uRes', 'uRect', 'uMouse', 'uPointer', 'uGlint', 'uTime', 'uScroll', 'uWake', 'uFade'].forEach((k) => (U[k] = gl.getUniformLocation(prog, k)));
 
   // состояние, которое двигает main.js (через gsap)
   const state = { wake: reduced ? 1 : 0, fade: 1, scroll: 0, glint: 0, imgW: 2172, imgH: 724 };
@@ -167,6 +177,20 @@ export function initCrystal(canvas, { src, reduced, mobile }) {
 
   let resolveReady;
   state.ready = new Promise((r) => (resolveReady = r));
+
+  // маска осколков — второй текстурный слот; пока не загрузилась, маска пустая (осколки двигаются вместе с фигурой)
+  const maskTex = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, maskTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, 1, 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, new Uint8Array([0]));
+  [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR));
+  [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE));
+  if (maskSrc) {
+    const mi = new Image();
+    mi.src = maskSrc;
+    mi.onload = () => { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, maskTex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, gl.LUMINANCE, gl.UNSIGNED_BYTE, mi); gl.activeTexture(gl.TEXTURE0); kick(); };
+  }
+  gl.activeTexture(gl.TEXTURE0);
 
   const tex = gl.createTexture();
   const img = new Image();
@@ -234,6 +258,10 @@ export function initCrystal(canvas, { src, reduced, mobile }) {
 
   function draw(now) {
     gl.uniform1i(U.uTex, 0);
+    gl.uniform1i(U.uMask, 1);
+    // осколки ближе к зрителю: сдвиг за мышью в ~3 раза сильнее фигуры + медленное покачивание
+    const tt = reduced ? 0 : (now - t0) / 1000;
+    gl.uniform2f(U.uShardOff, mx * 0.009 + Math.sin(tt * 0.7) * 0.002, -my * 0.011 + Math.cos(tt * 0.9) * 0.003);
     gl.uniform2f(U.uRes, canvas.width, canvas.height);
     gl.uniform4f(U.uRect, ...(cachedRect ||= rect()));
     gl.uniform2f(U.uMouse, mx, my);

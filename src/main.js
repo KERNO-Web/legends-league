@@ -3,7 +3,12 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CustomEase } from 'gsap/CustomEase';
 import { initCrystal } from './fx/crystal.js';
-import { TEAMS, DAYS, ZONES, TWITCH_URL, RULES_URL, SEASON_START } from './data.js';
+import { initSound } from './fx/sound.js';
+import { TEAMS, DAYS, ZONES, TWITCH_URL, RULES_URL, SEASON_START, MATCH_MINUTES } from './data.js';
+
+// «Сейчас»: можно подменить для показа/проверки — ?now=2026-11-20T10:30:00Z
+const NOW_SHIFT = (() => { try { const v = new URLSearchParams(location.search).get('now'); const t = v && Date.parse(v); return t ? t - Date.now() : 0; } catch { return 0; } })();
+const now = () => Date.now() + NOW_SHIFT;
 
 gsap.registerPlugin(ScrollTrigger, CustomEase);
 const root = document.documentElement;
@@ -65,7 +70,7 @@ addEventListener('resize', inkNow);
 
 /* ---------------- hero: момент A «пробуждение» ---------------- */
 const crystal = (() => {
-  try { return initCrystal($('[data-crystal]'), { src: 'img/hero-character.webp', reduced, mobile }); }
+  try { return initCrystal($('[data-crystal]'), { src: 'img/hero-character.webp', maskSrc: 'img/hero-shards.png', reduced, mobile }); }
   catch (err) { console.warn(err); return null; }
 })();
 if (!crystal) root.classList.add('no-gl');
@@ -170,14 +175,24 @@ function rowsHTML() {
     return `<div class="empty shape"><strong>No results yet</strong><p>The first scores land here on 20 November, right after the opening series.</p></div>`;
   }
   const day = DAYS.find((d) => d.id === state.day);
+  const t = now();
   return day.matches.map((m) => {
-    const label = `${m.a ? m.a.name : 'TBD'} vs ${m.b ? m.b.name : 'TBD'}, ${fmtTime(m.at)} ${state.zone.label}`;
+    const st = matchState(m, t);
+    const label = `${m.a ? m.a.name : 'TBD'} vs ${m.b ? m.b.name : 'TBD'}, ${st === 'live' ? 'live now' : fmtTime(m.at) + ' ' + state.zone.label}`;
     const shift = fmtDay(m.at) !== day.label ? `<small class="time__day">${fmtDay(m.at)}</small>` : '';
-    return `<article class="match shape" aria-label="${label}">
-      ${sideHTML(m.a, 'side--a', day.pool)}<span class="vs">VS</span>${sideHTML(m.b, 'side--b', day.pool)}
-      <time class="time" datetime="${m.at.toISOString()}"><span>${fmtTime(m.at)}${shift}</span></time>
+    const sides = `${sideHTML(m.a, 'side--a', day.pool)}<span class="vs">VS</span>${sideHTML(m.b, 'side--b', day.pool)}`;
+    // идёт сейчас: вся строка — ссылка на трансляцию
+    if (st === 'live') return `<a class="match shape is-live" href="${TWITCH_URL}" target="_blank" rel="noopener" aria-label="${label}, watch on Twitch">
+      ${sides}<span class="time"><span class="live-badge"><i aria-hidden="true"></i>LIVE</span></span></a>`;
+    return `<article class="match shape${st === 'done' ? ' is-done' : ''}" aria-label="${label}">
+      ${sides}<time class="time" datetime="${m.at.toISOString()}"><span>${fmtTime(m.at)}${shift}</span></time>
     </article>`;
   }).join('');
+}
+function matchState(m, t) {
+  const start = m.at.getTime();
+  if (t < start) return 'upcoming';
+  return t < start + MATCH_MINUTES * 60000 ? 'live' : 'done';
 }
 function bindRows() {
   if (!fine) return;
@@ -241,7 +256,21 @@ tzList.addEventListener('click', (e) => {
 });
 addEventListener('click', (e) => { if (!e.target.closest('.tz')) tzToggle(false); });
 
+(() => {
+  const today = DAYS.find((d) => d.matches.some((m) => { const st = matchState(m, now()); return st === 'live'; }))
+    || DAYS.find((d) => d.matches.some((m) => matchState(m, now()) === 'upcoming'));
+  if (today && today.id !== state.day) {
+    state.day = today.id;
+    $('.chip', daysEl).forEach((c) => { const on = c.dataset.day === today.id; c.classList.toggle('is-on', on); c.setAttribute('aria-selected', on); });
+  }
+})();
 renderRows(false);
+let lastSig = '';
+setInterval(() => {
+  if (state.tab !== 'upcoming') return;
+  const sig = DAYS.find((d) => d.id === state.day).matches.map((m) => matchState(m, now())).join();
+  if (sig !== lastSig) { lastSig = sig; renderRows(false); }
+}, 60000);
 const inks = () => { placeInk($('[data-seg="tab"]'), true); placeInk(daysEl, true); };
 requestAnimationFrame(inks);
 document.fonts?.ready.then(inks);
@@ -378,3 +407,14 @@ function tick() {
   return true;
 }
 if (tick()) { const iv = setInterval(() => { if (!tick()) clearInterval(iv); }, 15000); }
+
+/* ---------------- звук (выключен по умолчанию) ---------------- */
+initSound($('[data-sound]'));
+
+/* ---------------- футер: кристаллы чуть доворачиваются при прокрутке к низу ---------------- */
+if (!reduced) {
+  const fl = $('.foot__crystal-l'), fr = $('.foot__crystal-r');
+  const st = { trigger: '.foot', start: 'top bottom', end: 'bottom bottom', scrub: 0.8 };
+  gsap.fromTo(fl, { rotate: -5, y: 50, transformOrigin: '0% 100%' }, { rotate: 0, y: 0, ease: 'none', scrollTrigger: st });
+  gsap.fromTo(fr, { rotate: 5, y: 50, transformOrigin: '100% 100%' }, { rotate: 0, y: 0, ease: 'none', scrollTrigger: { ...st } });
+}

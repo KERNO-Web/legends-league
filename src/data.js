@@ -2,6 +2,8 @@
 
 export const TWITCH_URL = 'https://www.twitch.tv/';
 export const RULES_URL = '#';
+// Сколько считаем матч идущим после начала (примерно BO3), минут
+export const MATCH_MINUTES = 150;
 export const SEASON_START = '2026-11-20T09:00:00Z'; // 20 NOV 10:00 CET
 
 export const TEAMS = [
