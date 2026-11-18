@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Legends Premier League · Season 5</title>
+  <meta name="description" content="Legends Premier League Season 5. League of Legends tournament: 16 teams, €20,000 prize pool, Swiss stage and playoffs. Online, Europe. 20 Nov — 10 Dec." />
+  <meta name="theme-color" content="#120f19" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="img/lpl.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preload" as="image" href="img/crystal-hero.webp" />
+</head>
+<body>
+  <!-- Интро: диагональный разрез кристаллом -->
+  <div class="intro" aria-hidden="true">
+    <div class="intro__half intro__half--a"></div>
+    <div class="intro__half intro__half--b"></div>
+    <div class="intro__blade"></div>
+    <img class="intro__logo" src="img/lpl.png" alt="" />
+  </div>
+
+  <div class="bg" aria-hidden="true">
+    <div class="bg__rays"></div>
+    <div class="bg__glow"></div>
+    <div class="bg__grain"></div>
+  </div>
+
+  <header class="nav" data-nav>
+    <a class="nav__logo" href="#overview" aria-label="Legends Premier League">
+      <img src="img/lpl.png" alt="Legends Premier League" width="120" height="40" />
+    </a>
+    <span class="nav__sep"></span>
+    <nav class="nav__links" aria-label="Sections">
+      <a href="#overview" data-link="overview" class="is-active">Overview</a>
+      <a href="#matches" data-link="matches">Matches</a>
+      <a href="#teams" data-link="teams">Teams</a>
+      <a href="#format" data-link="format">Format</a>
+      <a href="#watch" data-link="watch">Watch</a>
+      <span class="nav__ink" aria-hidden="true"></span>
+    </nav>
+    <span class="nav__sep nav__sep--r"></span>
+    <span class="nav__season">Season 5</span>
+    <button class="nav__menu" type="button" aria-label="Menu" aria-expanded="false" data-menu-btn>
+      <i></i><i></i>
+    </button>
+    <div class="nav__progress" aria-hidden="true"></div>
+  </header>
+
+  <div class="menu" data-menu aria-hidden="true">
+    <div class="menu__panel menu__panel--a"></div>
+    <div class="menu__panel menu__panel--b"></div>
+    <nav class="menu__list" aria-label="Menu">
+      <a href="#overview"><small>01</small>Overview</a>
+      <a href="#matches"><small>02</small>Matches</a>
+      <a href="#teams"><small>03</small>Teams</a>
+      <a href="#format"><small>04</small>Format</a>
+      <a href="#watch"><small>05</small>Watch</a>
+    </nav>
+    <div class="menu__foot">
+      <span>20 Nov — 10 Dec</span>
+      <span>Online · Europe</span>
+    </div>
+  </div>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero" id="overview" data-section="overview">
+      <div class="hero__stage">
+        <canvas class="hero__gl" data-crystal aria-hidden="true"></canvas>
+        <img class="hero__fallback" src="img/crystal-hero.webp" alt="" aria-hidden="true" />
+        <div class="hero__num" aria-hidden="true" data-num>
+          <span class="hero__num-base">05</span>
+          <span class="hero__num-lit">05</span>
+        </div>
+        <!-- Сюда встанет персонаж: <img class="hero__character" src="img/character.webp" alt=""> -->
+        <div class="hero__character-slot" data-character></div>
+      </div>
+
+      <div class="wrap hero__content">
+        <p class="eyebrow" data-hero-in>Season 05</p>
+        <h1 class="hero__title" aria-label="Legends Awaken">
+          <span class="line" aria-hidden="true"><span class="word" data-split>LEGENDS</span></span>
+          <span class="line" aria-hidden="true"><span class="word word--glint" data-split>AWAKEN</span></span>
+        </h1>
+        <p class="hero__lead" data-hero-in>16 teams. One title. The next chapter begins.</p>
+        <div class="hero__dates" data-hero-in>
+          <span>20 NOV — 10 DEC</span>
+          <svg class="hero__arrow" viewBox="0 0 120 14" aria-hidden="true">
+            <path class="hero__arrow-line" d="M0 7 H108" />
+            <path class="hero__arrow-head" d="M100 1 L118 7 L100 13 L104 7 Z" />
+            <circle class="hero__arrow-spark" cx="0" cy="7" r="2" />
+          </svg>
+        </div>
+        <div class="hero__cta" data-hero-in>
+          <a class="btn btn--primary" href="#matches" data-magnetic>
+            <span>Explore matches</span>
+            <svg viewBox="0 0 12 14" aria-hidden="true"><path d="M6 1v11M1.5 7.5 6 12l4.5-4.5" /></svg>
+          </a>
+          <a class="btn btn--ghost" href="#watch" data-magnetic><span>Watch live</span></a>
+        </div>
+      </div>
+
+      <div class="wrap">
+        <dl class="stats shape" data-stats>
+          <svg class="shape__trace" aria-hidden="true"><rect /></svg>
+          <div class="stats__item">
+            <dt>Prize pool</dt>
+            <dd><span class="roll" data-roll="€20,000">€20,000</span></dd>
+          </div>
+          <div class="stats__item">
+            <dt>Teams</dt>
+            <dd><span class="roll" data-roll="16">16</span></dd>
+          </div>
+          <div class="stats__item">
+            <dt>Format</dt>
+            <dd><span data-scramble>SWISS + PLAYOFFS</span></dd>
+          </div>
+          <div class="stats__item">
+            <dt>Europe</dt>
+            <dd><span data-scramble>ONLINE</span></dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- MATCH CENTER -->
+    <section class="section" id="matches" data-section="matches">
+      <div class="wrap">
+        <header class="head">
+          <h2 class="head__title" data-split-title>Match center</h2>
+          <span class="head__line" aria-hidden="true"><i></i></span>
+          <span class="head__aside" data-scramble>Season starts 20 Nov</span>
+        </header>
+
+        <div class="mc">
+          <div class="mc__bar">
+            <div class="seg" role="tablist" aria-label="Match list" data-seg="tab">
+              <button class="chip is-on" role="tab" aria-selected="true" data-tab="upcoming">Upcoming</button>
+              <button class="chip" role="tab" aria-selected="false" data-tab="results">Results</button>
+              <span class="seg__ink" aria-hidden="true"></span>
+            </div>
+          </div>
+          <div class="mc__bar mc__bar--days">
+            <div class="seg seg--days" role="tablist" aria-label="Match day" data-seg="day" data-days></div>
+            <div class="tz">
+              <button class="tz__btn" type="button" aria-haspopup="listbox" aria-expanded="false" data-tz-btn>
+                Time: <b data-tz-label>CET</b>
+                <svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" /></svg>
+              </button>
+              <ul class="tz__list" role="listbox" data-tz-list hidden></ul>
+            </div>
+          </div>
+          <p class="mc__round" data-round></p>
+          <div class="mc__rows" data-rows aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEAMS -->
+    <section class="section" id="teams" data-section="teams">
+      <div class="wrap">
+        <header class="head">
+          <h2 class="head__title" data-split-title>Meet the teams</h2>
+          <span class="head__line" aria-hidden="true"><i></i></span>
+          <span class="head__aside" data-scramble>16 teams. One title.</span>
+        </header>
+        <ul class="teams" data-teams></ul>
+      </div>
+    </section>
+
+    <!-- FORMAT -->
+    <section class="section" id="format" data-section="format">
+      <div class="wrap">
+        <header class="head">
+          <h2 class="head__title" data-split-title>The road to the title</h2>
+          <span class="head__line" aria-hidden="true"><i></i></span>
+          <a class="head__aside head__aside--link" href="#" data-rules>
+            <span data-scramble>Tournament rules</span>
+            <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 8 8 2M3 2h5v5" /></svg>
+          </a>
+        </header>
+
+        <ol class="road" data-road>
+          <li class="road__beam" aria-hidden="true"><i></i></li>
+          <li class="step shape">
+            <svg class="step__icon" viewBox="0 0 32 32" aria-hidden="true">
+              <path d="M4 8h3M4 16h3M4 24h3M11 8h17M11 16h17M11 24h17" />
+            </svg>
+            <div><h3>Swiss stage</h3><p>16 teams compete</p></div>
+          </li>
+          <li class="road__chev" aria-hidden="true"><svg viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" /></svg></li>
+          <li class="step shape">
+            <svg class="step__icon" viewBox="0 0 32 32" aria-hidden="true">
+              <path d="M5 6h9v20H5M14 16h12" />
+            </svg>
+            <div><h3>Playoffs</h3><p>The best advance</p></div>
+          </li>
+          <li class="road__chev" aria-hidden="true"><svg viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" /></svg></li>
+          <li class="step step--final shape">
+            <svg class="step__icon" viewBox="0 0 32 32" aria-hidden="true">
+              <path d="M10 5h12v8a6 6 0 0 1-12 0V5ZM10 8H5v2a5 5 0 0 0 5 5M22 8h5v2a5 5 0 0 1-5 5M16 19v5M11 27h10M13 24h6" />
+            </svg>
+            <div><h3>Grand final</h3><p>One champion</p></div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- WATCH -->
+    <section class="section" id="watch" data-section="watch">
+      <div class="wrap">
+        <header class="head">
+          <h2 class="head__title" data-split-title>Watch the action</h2>
+          <span class="head__line" aria-hidden="true"><i></i></span>
+        </header>
+
+        <div class="watch">
+          <a class="screen shape" href="#" data-twitch aria-label="Open the broadcast on Twitch">
+            <div class="screen__crystal" aria-hidden="true"></div>
+            <div class="screen__scan" aria-hidden="true"></div>
+            <span class="screen__play" data-magnetic>
+              <svg class="screen__ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="47" /></svg>
+              <svg class="screen__tri" viewBox="0 0 20 22" aria-hidden="true"><path d="M2 2l16 9-16 9z" /></svg>
+            </span>
+            <span class="screen__label">Broadcast starts</span>
+            <strong class="screen__date">20 November</strong>
+            <span class="countdown" data-countdown aria-label="Time until broadcast">
+              <span><b data-cd="d">00</b><small>days</small></span>
+              <span><b data-cd="h">00</b><small>hrs</small></span>
+              <span><b data-cd="m">00</b><small>min</small></span>
+              <span><b data-cd="s">00</b><small>sec</small></span>
+            </span>
+          </a>
+          <div class="watch__copy">
+            <h3 data-split-title>Your front-row seat</h3>
+            <p>Watch all Legends Premier League Season 5 matches live on Twitch, from the Swiss stage to the Grand Final.</p>
+            <a class="btn btn--primary btn--wide" href="#" data-twitch data-magnetic>
+              <span>Open Twitch</span>
+              <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 8 8 2M3 2h5v5" /></svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="sponsors">
+          <a class="sponsor" href="#" aria-label="Mionix" data-holo-mask style="--logo:url(img/mionix.png)">
+            <img src="img/mionix.png" alt="Mionix" width="741" height="210" />
+          </a>
+          <span class="sponsors__sep" aria-hidden="true"></span>
+          <a class="sponsor" href="#" aria-label="Blacklyte" data-holo-mask style="--logo:url(img/blacklyte.png)">
+            <img src="img/blacklyte.png" alt="Blacklyte" width="1339" height="181" />
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="foot__crystal" aria-hidden="true" data-foot-crystal></div>
+    <div class="wrap foot__row">
+      <img class="foot__logo" src="img/lpl.png" alt="Legends Premier League" width="120" height="40" />
+      <span class="foot__sep"></span>
+      <p class="foot__tag">Follow the next chapter.</p>
+      <nav class="foot__links" aria-label="Social">
+        <a href="#">X</a><i>|</i><a href="#">Discord</a><i>|</i><a href="#">Contact</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
