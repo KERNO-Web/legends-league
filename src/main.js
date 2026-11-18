@@ -3,7 +3,6 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CustomEase } from 'gsap/CustomEase';
 import { initCrystal } from './fx/crystal.js';
-import { initSound } from './fx/sound.js';
 import { TEAMS, DAYS, ZONES, TWITCH_URL, RULES_URL, SEASON_START, MATCH_MINUTES } from './data.js';
 
 // «Сейчас»: можно подменить для показа/проверки — ?now=2026-11-20T10:30:00Z
@@ -27,20 +26,7 @@ const T = { xs: 0.2, s: 0.35, m: 0.6, l: 1.2 };
 $$('[data-twitch]').forEach((a) => { a.href = TWITCH_URL; a.target = '_blank'; a.rel = 'noopener'; });
 const rules = $('[data-rules]');
 if (rules) rules.href = RULES_URL;
-$$('a[href^="#"]').forEach((a) => a.addEventListener('click', () => closeMenu()));
 
-const menuBtn = $('[data-menu-btn]');
-const menuEl = $('[data-menu]');
-function openMenu() {
-  root.classList.add('menu-open'); menuBtn.setAttribute('aria-expanded', 'true'); menuEl.setAttribute('aria-hidden', 'false');
-  if (!reduced) gsap.fromTo('.menu__list a', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: T.m, ease: 'main', stagger: 0.05, delay: 0.1 });
-}
-function closeMenu() {
-  if (!root.classList.contains('menu-open')) return;
-  root.classList.remove('menu-open'); menuBtn.setAttribute('aria-expanded', 'false'); menuEl.setAttribute('aria-hidden', 'true');
-}
-menuBtn.addEventListener('click', () => (root.classList.contains('menu-open') ? closeMenu() : openMenu()));
-addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
 
 /* ---------------- навигация ---------------- */
 const nav = $('[data-nav]');
@@ -408,8 +394,6 @@ function tick() {
 }
 if (tick()) { const iv = setInterval(() => { if (!tick()) clearInterval(iv); }, 15000); }
 
-/* ---------------- звук (выключен по умолчанию) ---------------- */
-initSound($('[data-sound]'));
 
 /* ---------------- футер: кристаллы чуть доворачиваются при прокрутке к низу ---------------- */
 if (!reduced) {
