@@ -1,6 +1,7 @@
 // Персонаж в hero: WebGL-шейдер поверх арта дизайнера (макет v2), с честной прозрачностью.
 // Пробуждение: фронт света проводит фигуру из тёмного силуэта в цвет (uWake 0→1, линейно).
-// После: медленный перелив по граням, лёгкий параллакс и узкий блик за курсором (только десктоп).
+// После: дым из глаз, дыхание их свечения, волна энергии по огненной броне, редкие искры,
+// медленный перелив, лёгкий параллакс и узкий блик за курсором (только десктоп).
 // Рендер только пока hero виден и вкладка активна; в покое — каждый второй кадр.
 
 const VERT = `
@@ -27,6 +28,20 @@ float noise(vec2 p){
   return mix(mix(hash2(i), hash2(i+vec2(1,0)), u.x), mix(hash2(i+vec2(0,1)), hash2(i+vec2(1,1)), u.x), u.y);
 }
 vec3 prism(float t){ return .55 + .45*cos(6.2831*(t + vec3(0., .33, .67))); }
+float fbm(vec2 p){ float v = 0., a = .5; for (int i = 0; i < 4; i++){ v += a * noise(p); p = p * 2.03 + 17.1; a *= .5; } return v; }
+
+// Дым из глаза: струйка вдоль D, ширина растёт, рвётся шумом и тает. e — точка относительно глаза (изотропно).
+float smoke(vec2 e, vec2 D, float seed){
+  float u = dot(e, D), v = dot(e, vec2(-D.y, D.x));
+  const float L = .13;
+  if (u < -.012 || u > L || abs(v) > .06) return 0.;
+  float t = uTime;
+  v += (fbm(vec2(u * 22. - t * .55, t * .18 + seed)) - .5) * .045 * smoothstep(0., L, u); // извивается
+  float w = .003 + u * .16;
+  float body = exp(-v * v / (w * w));
+  float tear = fbm(vec2(u * 34. - t * 1.25, v * 70. + seed));                          // рвётся на клочья
+  return body * smoothstep(-.012, .006, u) * (1. - smoothstep(L * .35, L, u)) * smoothstep(.32, .75, tear) * 1.5;
+}
 
 vec4 tex(vec2 p){
   if (p.x < 0. || p.x > 1. || p.y < 0. || p.y > 1.) return vec4(0.);
@@ -60,8 +75,12 @@ void main(){
   col = mix(col, col * prism(n * .8 + axis * .6 + uTime * .015) * 1.5, .14 * hi); // лёгкий перелив только по светящейся броне
   col += vec3(1., .9, .8) * pow(n2, 14.) * hi * a * 1.5;
 
-  // фронт пробуждения: ось от широкого края (A) к хвосту (B), в изотропных координатах
   vec2 q = p * vec2(1., uRect.w / uRect.z);
+  float fire = smoothstep(.08, .3, col.r - col.b) * smoothstep(.3, .75, lum);
+  float energy = .5 + .5 * sin(uTime * 1.3 + q.y * 16. - q.x * 4.);
+  col += col * fire * (.1 + .32 * smoothstep(.55, 1., energy) * (.6 + .5 * n));
+
+  // фронт пробуждения: ось от широкого края (A) к хвосту (B), в изотропных координатах
   vec2 A = vec2(1.0, .05), B = vec2(.25, .5);
   vec2 ab = B - A;
   float s = dot(q - A, ab) / dot(ab, ab) + (n - .5) * .025;
@@ -72,13 +91,50 @@ void main(){
   vec3 pre = vec3(.10, .07, .16) * a + vec3(.42, .30, .62) * lum * .12; // до фронта — тёмный фиолетовый силуэт
   col = mix(pre, col * (1. + after), lit) + vec3(1., .86, .62) * rim * 1.1;
 
+  // живые слои — только когда персонаж «проснулся»
+  float live = smoothstep(.6, 1., uWake);
+  float extraA = 0.;
+  // глаза (из арта: левый 0.355/0.302, правый 0.405/0.281) — дышат свечением с лёгким мерцанием
+  vec2 EL = vec2(.355, .302 * uRect.w / uRect.z), ER = vec2(.405, .281 * uRect.w / uRect.z);
+  vec2 eL = q - EL, eR = q - ER;
+  if (abs(eL.x) < .16 && abs(eL.y) < .12 || abs(eR.x) < .16 && abs(eR.y) < .12) {
+    float flick = noise(vec2(uTime * 3.1, 3.7)) - .5;
+    float pL = .72 + .22 * sin(uTime * 2.1) + .12 * flick, pR = .72 + .22 * sin(uTime * 2.1 + 1.3) + .12 * flick;
+    float halo = exp(-dot(eL, eL) / .00028) * pL + exp(-dot(eR, eR) / .00028) * pR;
+    float core = exp(-dot(eL, eL) / .00002) * pL + exp(-dot(eR, eR) / .00002) * pR;
+    vec3 eyeC = vec3(.45, .58, 1.) * halo * .6 + vec3(.85, .9, 1.) * core * .5;
+    // дым: правый глаз вверх-вправо, левый влево-вверх (как на арте)
+    float sm = smoke(eR, normalize(vec2(1., -.5)), 1.7) + smoke(eL, normalize(vec2(-1., -.3)), 5.3) * .8;
+    vec3 smC = vec3(.66, .68, 1.) * sm * .5;
+    col += (eyeC + smC) * live;
+    extraA += (halo * .25 + sm * .4) * live;
+  }
+  // искры: редкие, поднимаются вокруг фигуры
+  for (int Ly = 0; Ly < 2; Ly++) {
+    float fl = float(Ly);
+    vec2 g = q * (16. + fl * 9.);
+    g.y += uTime * (.45 + fl * .2);
+    g.x += sin(uTime * .6 + g.y * .8 + fl) * .35;
+    vec2 id = floor(g), fr = fract(g) - .5;
+    float h = hash2(id + fl * 31.);
+    if (h > .93) {
+      vec2 o = vec2(hash2(id + 2.1), hash2(id + 8.3)) - .5;
+      float dd = length(fr - o * .6);
+      float tw = .5 + .5 * sin(uTime * (2. + h * 5.) + h * 50.);
+      vec3 sc = mix(vec3(1., .62, .28), vec3(.78, .55, 1.), step(.965, h));
+      float sp = smoothstep(.09, 0., dd) * tw * smoothstep(.12, .3, p.x) * (1. - smoothstep(.62, .8, p.y)) * smoothstep(.04, .14, p.y);
+      col += sc * sp * live;
+      extraA += sp * live;
+    }
+  }
+
   // узкий блик за курсором под углом граней (115°)
   vec2 gd = vec2(.906, .423);
   float k = dot(px - uPointer, gd) / uRect.z;
   col += vec3(1., .9, .72) * exp(-k * k / .00012) * hi * a * .9 * uGlint;
 
   float k2 = uFade * (1. - uScroll * .7);
-  gl_FragColor = vec4(col * k2, a * k2); // премультиплированная альфа: персонаж не просвечивает
+  gl_FragColor = vec4(col * k2, clamp(a + extraA, 0., 1.) * k2); // премультиплированная альфа: персонаж не просвечивает
 }`;
 
 export function initCrystal(canvas, { src, reduced, mobile }) {
