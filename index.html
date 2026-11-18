@@ -14,17 +14,8 @@
   <link rel="preload" as="image" href="img/crystal-hero.webp" />
 </head>
 <body>
-  <!-- Интро: диагональный разрез кристаллом -->
-  <div class="intro" aria-hidden="true">
-    <div class="intro__half intro__half--a"></div>
-    <div class="intro__half intro__half--b"></div>
-    <div class="intro__blade"></div>
-    <img class="intro__logo" src="img/lpl.png" alt="" />
-  </div>
-
   <div class="bg" aria-hidden="true">
     <div class="bg__rays"></div>
-    <div class="bg__glow"></div>
     <div class="bg__grain"></div>
   </div>
 
@@ -46,7 +37,6 @@
     <button class="nav__menu" type="button" aria-label="Menu" aria-expanded="false" data-menu-btn>
       <i></i><i></i>
     </button>
-    <div class="nav__progress" aria-hidden="true"></div>
   </header>
 
   <div class="menu" data-menu aria-hidden="true">
@@ -73,54 +63,48 @@
         <img class="hero__fallback" src="img/crystal-hero.webp" alt="" aria-hidden="true" />
         <div class="hero__num" aria-hidden="true" data-num>
           <span class="hero__num-base">05</span>
-          <span class="hero__num-lit">05</span>
         </div>
         <!-- Сюда встанет персонаж: <img class="hero__character" src="img/character.webp" alt=""> -->
         <div class="hero__character-slot" data-character></div>
       </div>
 
       <div class="wrap hero__content">
-        <p class="eyebrow" data-hero-in>Season 05</p>
+        <p class="eyebrow">Season 05</p>
         <h1 class="hero__title" aria-label="Legends Awaken">
-          <span class="line" aria-hidden="true"><span class="word" data-split>LEGENDS</span></span>
-          <span class="line" aria-hidden="true"><span class="word word--glint" data-split>AWAKEN</span></span>
+          <span class="line" aria-hidden="true"><span class="word">LEGENDS</span></span>
+          <span class="line" aria-hidden="true"><span class="word">AWAKEN</span></span>
         </h1>
-        <p class="hero__lead" data-hero-in>16 teams. One title. The next chapter begins.</p>
-        <div class="hero__dates" data-hero-in>
+        <p class="hero__lead">16 teams. One title. The next chapter begins.</p>
+        <div class="hero__dates">
           <span>20 NOV — 10 DEC</span>
-          <svg class="hero__arrow" viewBox="0 0 120 14" aria-hidden="true">
-            <path class="hero__arrow-line" d="M0 7 H108" />
-            <path class="hero__arrow-head" d="M100 1 L118 7 L100 13 L104 7 Z" />
-            <circle class="hero__arrow-spark" cx="0" cy="7" r="2" />
-          </svg>
+          <svg class="hero__arrow" viewBox="0 0 110 12" aria-hidden="true"><path d="M0 0H110L90 12L95 3H0Z" /></svg>
         </div>
-        <div class="hero__cta" data-hero-in>
-          <a class="btn btn--primary" href="#matches" data-magnetic>
+        <div class="hero__cta">
+          <a class="btn btn--primary" href="#matches">
             <span>Explore matches</span>
             <svg viewBox="0 0 12 14" aria-hidden="true"><path d="M6 1v11M1.5 7.5 6 12l4.5-4.5" /></svg>
           </a>
-          <a class="btn btn--ghost" href="#watch" data-magnetic><span>Watch live</span></a>
+          <a class="btn btn--ghost" href="#watch"><span>Watch live</span></a>
         </div>
       </div>
 
       <div class="wrap">
         <dl class="stats shape" data-stats>
-          <svg class="shape__trace" aria-hidden="true"><rect /></svg>
           <div class="stats__item">
             <dt>Prize pool</dt>
-            <dd><span class="roll" data-roll="€20,000">€20,000</span></dd>
+            <dd>€20,000</dd>
           </div>
           <div class="stats__item">
             <dt>Teams</dt>
-            <dd><span class="roll" data-roll="16">16</span></dd>
+            <dd>16</dd>
           </div>
           <div class="stats__item">
             <dt>Format</dt>
-            <dd><span data-scramble>SWISS + PLAYOFFS</span></dd>
+            <dd>SWISS + PLAYOFFS</dd>
           </div>
           <div class="stats__item">
             <dt>Europe</dt>
-            <dd><span data-scramble>ONLINE</span></dd>
+            <dd>ONLINE</dd>
           </div>
         </dl>
       </div>
@@ -130,9 +114,9 @@
     <section class="section" id="matches" data-section="matches">
       <div class="wrap">
         <header class="head">
-          <h2 class="head__title" data-split-title>Match center</h2>
+          <h2 class="head__title">Match center</h2>
           <span class="head__line" aria-hidden="true"><i></i></span>
-          <span class="head__aside" data-scramble>Season starts 20 Nov</span>
+          <span class="head__aside">Season starts 20 Nov</span>
         </header>
 
         <div class="mc">
@@ -163,9 +147,9 @@
     <section class="section" id="teams" data-section="teams">
       <div class="wrap">
         <header class="head">
-          <h2 class="head__title" data-split-title>Meet the teams</h2>
+          <h2 class="head__title">Meet the teams</h2>
           <span class="head__line" aria-hidden="true"><i></i></span>
-          <span class="head__aside" data-scramble>16 teams. One title.</span>
+          <span class="head__aside">16 teams. One title.</span>
         </header>
         <ul class="teams" data-teams></ul>
       </div>
@@ -175,16 +159,15 @@
     <section class="section" id="format" data-section="format">
       <div class="wrap">
         <header class="head">
-          <h2 class="head__title" data-split-title>The road to the title</h2>
+          <h2 class="head__title">The road to the title</h2>
           <span class="head__line" aria-hidden="true"><i></i></span>
           <a class="head__aside head__aside--link" href="#" data-rules>
-            <span data-scramble>Tournament rules</span>
+            Tournament rules
             <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 8 8 2M3 2h5v5" /></svg>
           </a>
         </header>
 
         <ol class="road" data-road>
-          <li class="road__beam" aria-hidden="true"><i></i></li>
           <li class="step shape">
             <svg class="step__icon" viewBox="0 0 32 32" aria-hidden="true">
               <path d="M4 8h3M4 16h3M4 24h3M11 8h17M11 16h17M11 24h17" />
@@ -213,7 +196,7 @@
     <section class="section" id="watch" data-section="watch">
       <div class="wrap">
         <header class="head">
-          <h2 class="head__title" data-split-title>Watch the action</h2>
+          <h2 class="head__title">Watch the action</h2>
           <span class="head__line" aria-hidden="true"><i></i></span>
         </header>
 
@@ -221,7 +204,7 @@
           <a class="screen shape" href="#" data-twitch aria-label="Open the broadcast on Twitch">
             <div class="screen__crystal" aria-hidden="true"></div>
             <div class="screen__scan" aria-hidden="true"></div>
-            <span class="screen__play" data-magnetic>
+            <span class="screen__play">
               <svg class="screen__ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="47" /></svg>
               <svg class="screen__tri" viewBox="0 0 20 22" aria-hidden="true"><path d="M2 2l16 9-16 9z" /></svg>
             </span>
@@ -235,9 +218,9 @@
             </span>
           </a>
           <div class="watch__copy">
-            <h3 data-split-title>Your front-row seat</h3>
+            <h3>Your front-row seat</h3>
             <p>Watch all Legends Premier League Season 5 matches live on Twitch, from the Swiss stage to the Grand Final.</p>
-            <a class="btn btn--primary btn--wide" href="#" data-twitch data-magnetic>
+            <a class="btn btn--primary btn--wide" href="#" data-twitch>
               <span>Open Twitch</span>
               <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 8 8 2M3 2h5v5" /></svg>
             </a>

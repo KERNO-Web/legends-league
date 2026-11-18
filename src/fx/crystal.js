@@ -1,6 +1,6 @@
 // Кристалл в hero: WebGL-шейдер поверх картинки дизайнера.
-// Параллакс от курсора, RGB-расслоение от скорости мыши, перелив по граням,
-// искры, а при скролле кристалл рассыпается на диагональные полосы.
+// Спокойно: медленный перелив по граням, лёгкий параллакс от курсора,
+// плавное появление и угасание при уходе hero.
 
 const VERT = `
 attribute vec2 a;
@@ -40,23 +40,17 @@ void main(){
 
   // параллакс: дальние части двигаются меньше
   float depth = .4 + .6 * smoothstep(.3, 1., p.x);
-  p -= uMouse * vec2(.018, -.03) * depth;
+  p -= uMouse * vec2(.01, -.016) * depth;
 
   // полосы вдоль граней кристалла (диагональ ~ -19°)
   float axis = p.x * .94 + p.y * .34 * (uRect.w / uRect.z) * 3.;
-  float band = floor(axis * 22.);
-  float r = hash(band + 3.);
   vec2 dir = normalize(vec2(1., -.36));
-  p -= dir * uScroll * (.04 + r * r * .5);
-  p.y += uScroll * (r - .5) * .06;
 
   // появление: диагональная волна света
-  float sweep = (p.x - p.y * .35) - (uIntro * 1.8 - .4);
-  float shown = smoothstep(.12, -.02, sweep);
-  float edge = smoothstep(.12, .0, abs(sweep - .05)) * (1. - uIntro);
+  float shown = uIntro;
 
   // хроматическое расслоение
-  float ca = (.0018 + uVel * .012) * (1. + uScroll * 3.);
+  float ca = .0014;
   vec2 cd = dir * ca;
   vec4 cr = tex(p + cd), cg = tex(p), cb = tex(p - cd);
   vec3 col = vec3(cr.r, cg.g, cb.b);
@@ -64,38 +58,16 @@ void main(){
 
   // перелив по граням: шум, бегущий вдоль кристалла
   float lum = dot(col, vec3(.3, .59, .11));
-  float n = noise(vec2(axis * 9. - uTime * .35, p.y * 6. + uTime * .12));
-  float n2 = noise(p * vec2(18., 30.) + uTime * .2);
+  float n = noise(vec2(axis * 9. - uTime * .12, p.y * 6. + uTime * .04));
+  float n2 = noise(p * vec2(18., 30.) + uTime * .06);
   float hi = smoothstep(.25, .85, lum);
   col += col * hi * (n - .45) * 1.1;
-  col = mix(col, col * prism(n * .8 + axis * .6 + uTime * .04) * 1.6, .35 * hi);
+  col = mix(col, col * prism(n * .8 + axis * .6 + uTime * .015) * 1.6, .35 * hi);
   // блики-звёзды на ярких местах
   col += vec3(1., .9, .8) * pow(n2, 14.) * hi * 3.;
 
-  // искры
-  vec3 sp = vec3(0.);
-  for (int L = 0; L < 2; L++){
-    float fl = float(L);
-    float sc = 46. + fl * 30.;
-    vec2 q = px / uDpr / sc;
-    q += vec2(-uTime * (.25 + fl * .2), uTime * (.12 + fl * .08));
-    q += uMouse * (1.5 + fl * 2.);
-    vec2 id = floor(q), f = fract(q) - .5;
-    float h = hash2(id + fl * 17.);
-    if (h > .86){
-      vec2 o = vec2(hash2(id + 1.3), hash2(id + 7.1)) - .5;
-      float d = length(f - o * .7);
-      float tw = .5 + .5 * sin(uTime * (2. + h * 4.) + h * 40.);
-      vec3 sc2 = mix(vec3(1., .78, .45), vec3(.75, .5, 1.), step(.93, h));
-      sp += sc2 * smoothstep(.06, .0, d) * tw * (.6 + fl * .4);
-    }
-  }
-  // искры гуще у кристалла, реже слева
-  float sx = gl_FragCoord.x / uRes.x;
-  sp *= smoothstep(.15, .75, sx) * (1. - uScroll);
 
-  vec3 outc = col * shown + vec3(.85, .65, 1.) * edge * a * 2.5 + sp * uIntro;
-  outc *= 1. - uScroll * .55;
+  vec3 outc = col * shown * (1. - uScroll * .7);
   gl_FragColor = vec4(outc, 1.);
 }`;
 
@@ -171,8 +143,8 @@ export function initCrystal(canvas, { src, reduced }) {
   function frame(now) {
     requestAnimationFrame(frame);
     if (!state.ready || !state.visible) return;
-    state.mx += (state.tx - state.mx) * 0.06;
-    state.my += (state.ty - state.my) * 0.06;
+    state.mx += (state.tx - state.mx) * 0.035;
+    state.my += (state.ty - state.my) * 0.035;
     state.vel *= 0.92;
     gl.uniform1i(U.uTex, 0);
     gl.uniform2f(U.uRes, canvas.width, canvas.height);
