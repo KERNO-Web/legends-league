@@ -261,7 +261,7 @@ export function initCrystal(canvas, { src, maskSrc, reduced, mobile }) {
     gl.uniform1i(U.uMask, 1);
     // осколки ближе к зрителю: сдвиг за мышью в ~3 раза сильнее фигуры + медленное покачивание
     const tt = reduced ? 0 : (now - t0) / 1000;
-    gl.uniform2f(U.uShardOff, mx * 0.009 + Math.sin(tt * 0.7) * 0.002, -my * 0.011 + Math.cos(tt * 0.9) * 0.003);
+    gl.uniform2f(U.uShardOff, mx * 0.006 + Math.sin(tt * 0.7) * 0.0015, -my * 0.007 + Math.cos(tt * 0.9) * 0.002);
     gl.uniform2f(U.uRes, canvas.width, canvas.height);
     gl.uniform4f(U.uRect, ...(cachedRect ||= rect()));
     gl.uniform2f(U.uMouse, mx, my);
