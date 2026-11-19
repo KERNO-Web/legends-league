@@ -3,7 +3,8 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CustomEase } from 'gsap/CustomEase';
 import { initCrystal } from './fx/crystal.js';
-import { TEAMS, DAYS, ZONES, TWITCH_URL, RULES_URL, SEASON_START, MATCH_MINUTES } from './data.js';
+import { TEAMS, ZONES, TWITCH_URL, RULES_URL, SEASON_START, MATCH_MINUTES } from './data.js';
+import { snapshotDays, loadDays } from './schedule.js';
 
 // «Сейчас»: можно подменить для показа/проверки — ?now=2026-11-20T10:30:00Z
 const NOW_SHIFT = (() => { try { const v = new URLSearchParams(location.search).get('now'); const t = v && Date.parse(v); return t ? t - Date.now() : 0; } catch { return 0; } })();
@@ -131,13 +132,12 @@ $$('.head').forEach((head) => {
   });
 });
 
-/* ---------------- match center ---------------- */
-const state = { tab: 'upcoming', day: DAYS[0].id, zone: ZONES[0] };
+/* ---------------- match center: данные из Google-таблицы организатора ---------------- */
+let DAYS = snapshotDays();
+const state = { tab: 'upcoming', day: DAYS[0]?.id, zone: ZONES[0] };
 try { const z = localStorage.getItem('lpl-zone'); if (z) state.zone = ZONES.find((x) => x.id === z) || state.zone; } catch {}
 const rowsEl = $('[data-rows]');
 const daysEl = $('[data-days]');
-
-daysEl.innerHTML = DAYS.map((d, i) => `<button class="chip${i ? '' : ' is-on'}" role="tab" aria-selected="${!i}" data-day="${d.id}"><span>${d.label}</span></button>`).join('') + '<span class="seg__ink" aria-hidden="true"></span>';
 $$('[data-seg="tab"] .chip').forEach((b) => { b.innerHTML = `<span>${b.textContent}</span>`; });
 
 function placeInk(seg, instant) {
@@ -151,34 +151,43 @@ function placeInk(seg, instant) {
 
 const fmtTime = (d) => new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: state.zone.tz }).format(d);
 const fmtDay = (d) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: state.zone.tz }).format(d).toUpperCase();
+const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-function sideHTML(t, cls, pool) {
-  if (!t) return `<div class="side ${cls} side--tbd"><span class="tbd" aria-hidden="true"></span><span>${pool ? pool + ' team' : 'TBD'}</span></div>`;
-  return `<div class="side ${cls}"><img src="${t.logo}" alt="" width="60" height="60" loading="lazy"><span title="${t.name}">${t.name}</span></div>`;
-}
-function rowsHTML() {
-  if (state.tab === 'results') {
-    return `<div class="empty shape"><strong>No results yet</strong><p>The first scores land here on 20 November, right after the opening series.</p></div>`;
-  }
-  const day = DAYS.find((d) => d.id === state.day);
-  const t = now();
-  return day.matches.map((m) => {
-    const st = matchState(m, t);
-    const label = `${m.a ? m.a.name : 'TBD'} vs ${m.b ? m.b.name : 'TBD'}, ${st === 'live' ? 'live now' : fmtTime(m.at) + ' ' + state.zone.label}`;
-    const shift = fmtDay(m.at) !== day.label ? `<small class="time__day">${fmtDay(m.at)}</small>` : '';
-    const sides = `${sideHTML(m.a, 'side--a', day.pool)}<span class="vs">VS</span>${sideHTML(m.b, 'side--b', day.pool)}`;
-    // идёт сейчас: вся строка — ссылка на трансляцию
-    if (st === 'live') return `<a class="match shape is-live" href="${TWITCH_URL}" target="_blank" rel="noopener" aria-label="${label}, watch on Twitch">
-      ${sides}<span class="time"><span class="live-badge"><i aria-hidden="true"></i>LIVE</span></span></a>`;
-    return `<article class="match shape${st === 'done' ? ' is-done' : ''}" aria-label="${label}">
-      ${sides}<time class="time" datetime="${m.at.toISOString()}"><span>${fmtTime(m.at)}${shift}</span></time>
-    </article>`;
-  }).join('');
+function sideHTML(t, cls) {
+  if (!t) return `<div class="side ${cls} side--tbd"><span class="tbd" aria-hidden="true"></span><span>TBD</span></div>`;
+  const logo = t.logo ? `<img src="${t.logo}" alt="" width="60" height="60" loading="lazy">` : '<span class="tbd" aria-hidden="true"></span>';
+  return `<div class="side ${cls}">${logo}<span title="${esc(t.name)}">${esc(t.name)}</span></div>`;
 }
 function matchState(m, t) {
+  if (m.score) return 'done';
   const start = m.at.getTime();
   if (t < start) return 'upcoming';
   return t < start + MATCH_MINUTES * 60000 ? 'live' : 'done';
+}
+function rowHTML(m, dayLabel, t) {
+  const st = matchState(m, t);
+  const names = `${m.a ? m.a.name : 'TBD'} vs ${m.b ? m.b.name : 'TBD'}`;
+  const sides = `${sideHTML(m.a, 'side--a')}<span class="vs">VS</span>${sideHTML(m.b, 'side--b')}`;
+  // идёт сейчас: вся строка — ссылка на трансляцию
+  if (st === 'live') return `<a class="match shape is-live" href="${TWITCH_URL}" target="_blank" rel="noopener" aria-label="${esc(names)}, live now, watch on Twitch">
+    ${sides}<span class="time"><span class="live-badge"><i aria-hidden="true"></i>LIVE</span></span></a>`;
+  // сыгран: вместо времени счёт
+  if (m.score) return `<article class="match shape is-done has-score" aria-label="${esc(names)}, ${m.score.join(':')}">
+    ${sides}<span class="time"><span class="score">${m.score[0]}<i>:</i>${m.score[1]}</span></span></article>`;
+  const shift = dayLabel && fmtDay(m.at) !== dayLabel ? `<small class="time__day">${fmtDay(m.at)}</small>` : '';
+  return `<article class="match shape${st === 'done' ? ' is-done' : ''}" aria-label="${esc(names)}, ${fmtTime(m.at)} ${state.zone.label}">
+    ${sides}<time class="time" datetime="${m.at.toISOString()}"><span>${fmtTime(m.at)}${shift}</span></time></article>`;
+}
+function rowsHTML() {
+  const t = now();
+  if (state.tab === 'results') {
+    const done = DAYS.flatMap((d) => d.matches).filter((m) => m.score).sort((x, y) => y.at - x.at);
+    if (!done.length) return `<div class="empty shape"><strong>No results yet</strong><p>Scores appear here as soon as the first series are played.</p></div>`;
+    return done.map((m) => rowHTML(m, null, t)).join('');
+  }
+  const day = DAYS.find((d) => d.id === state.day);
+  if (!day) return `<div class="empty shape"><strong>Schedule coming soon</strong><p>Match times will be published shortly.</p></div>`;
+  return day.matches.map((m) => rowHTML(m, day.label, t)).join('');
 }
 function bindRows() {
   if (!fine) return;
@@ -201,6 +210,19 @@ function renderRows(animate = true) {
     .to(old, { y: -12, opacity: 0, duration: T.xs, ease: 'main' })
     .add(apply)
     .add(() => gsap.fromTo([...rowsEl.children], { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: T.s, ease: 'main', stagger: 0.04, clearProps: 'transform' }));
+}
+// день по умолчанию: где идёт матч, иначе ближайший с предстоящими, иначе последний
+function pickDay() {
+  const t = now();
+  const d = DAYS.find((x) => x.matches.some((m) => matchState(m, t) === 'live'))
+    || DAYS.find((x) => x.matches.some((m) => matchState(m, t) === 'upcoming'))
+    || DAYS[DAYS.length - 1];
+  return d?.id;
+}
+function renderDays() {
+  if (!DAYS.some((d) => d.id === state.day)) state.day = pickDay();
+  daysEl.innerHTML = DAYS.map((d) => `<button class="chip${d.id === state.day ? ' is-on' : ''}" role="tab" aria-selected="${d.id === state.day}" data-day="${d.id}"><span>${d.label}</span></button>`).join('') + '<span class="seg__ink" aria-hidden="true"></span>';
+  placeInk(daysEl, true);
 }
 
 function select(seg, btn) {
@@ -238,29 +260,36 @@ tzList.addEventListener('click', (e) => {
   $$('li', tzList).forEach((x) => x.setAttribute('aria-selected', x === li));
   tzLabel.textContent = state.zone.label;
   tzToggle(false);
-  if (state.tab === 'upcoming') renderRows();
+  renderRows();
 });
 addEventListener('click', (e) => { if (!e.target.closest('.tz')) tzToggle(false); });
 
-(() => {
-  const today = DAYS.find((d) => d.matches.some((m) => { const st = matchState(m, now()); return st === 'live'; }))
-    || DAYS.find((d) => d.matches.some((m) => matchState(m, now()) === 'upcoming'));
-  if (today && today.id !== state.day) {
-    state.day = today.id;
-    $('.chip', daysEl).forEach((c) => { const on = c.dataset.day === today.id; c.classList.toggle('is-on', on); c.setAttribute('aria-selected', on); });
-  }
-})();
+state.day = pickDay();
+renderDays();
 renderRows(false);
-let lastSig = '';
-setInterval(() => {
-  if (state.tab !== 'upcoming') return;
-  const sig = DAYS.find((d) => d.id === state.day).matches.map((m) => matchState(m, now())).join();
-  if (sig !== lastSig) { lastSig = sig; renderRows(false); }
-}, 60000);
 const inks = () => { placeInk($('[data-seg="tab"]'), true); placeInk(daysEl, true); };
 requestAnimationFrame(inks);
 document.fonts?.ready.then(inks);
 addEventListener('resize', inks);
+
+// живые данные: сразу и потом раз в 2 минуты; перерисовка только если что-то поменялось
+let lastSig = '';
+const sig = () => JSON.stringify(DAYS.map((d) => [d.id, d.matches.map((m) => [m.a?.name, m.b?.name, +m.at, m.score, matchState(m, now())])]));
+async function refresh() {
+  try {
+    const fresh = await loadDays();
+    DAYS = fresh;
+  } catch { /* таблица недоступна — остаёмся на снимке */ }
+  const s = sig();
+  if (s === lastSig) return;
+  const first = !lastSig;
+  lastSig = s;
+  renderDays();
+  renderRows(!first && !reduced);
+}
+lastSig = sig();
+refresh();
+setInterval(() => { if (!document.hidden) refresh(); }, 120000);
 
 reveal('.mc', [$('.mc')]);
 

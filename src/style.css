@@ -402,3 +402,8 @@ ul, ol { list-style: none; }
 @media (max-width: 600px) { .live-badge { font-size: 16px; gap: 6px; } .live-badge i { width: 8px; height: 8px; } }
 
 .foot__crystal i { will-change: transform; }
+
+/* сыгранный матч: счёт вместо времени */
+.time .score { display: inline-flex; align-items: center; gap: 0.5rem; font-variant-numeric: tabular-nums; }
+.time .score i { font-style: normal; color: var(--gold); }
+.match.has-score { opacity: 0.85; }
