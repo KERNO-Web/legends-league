@@ -1,0 +1,1 @@
+import"./schedule-Bwl8pwVZ.js";import{t as e}from"./side-BbdpIoBE.js";await document.fonts.ready,e({art:`brb`,lines:[`BE RIGHT`,`BACK`],titleY:329,size:179,pitch:148,sub:`THE ACTION CONTINUES SOON`,subY:669,line:[590,738],flares:[[1100,167,1],[1660,443,.9],[1305,551,.45],[1442,283,.4]],motes:[26,[860,300,1e3,700]]});

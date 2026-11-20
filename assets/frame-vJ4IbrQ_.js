@@ -1,4 +1,4 @@
-import{l as e}from"./schedule-Bwl8pwVZ.js";import{D as t,O as n,S as r,b as i,f as a,i as o,k as s,n as c,r as l,s as u,w as d}from"./hud-ClgyzRfd.js";document.head.appendChild(Object.assign(document.createElement(`style`),{textContent:`
+import{l as e}from"./schedule-Bwl8pwVZ.js";import{D as t,O as n,S as r,b as i,f as a,i as o,k as s,n as c,r as l,s as u,w as d}from"./hud-BNSVchXU.js";document.head.appendChild(Object.assign(document.createElement(`style`),{textContent:`
 .fr-bg { position: absolute; inset: 0; background: url(img/bg-frame.webp) 0 0 / 1920px 1080px; }
 .fr-svg { position: absolute; inset: 0; overflow: visible; }
 .cr { position: absolute; will-change: transform; }

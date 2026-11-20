@@ -1,4 +1,4 @@
-import{l as e}from"./schedule-Bwl8pwVZ.js";import{A as t,D as n,M as r,N as i,O as a,S as o,_ as s,d as c,f as l,g as u,h as d,i as f,k as p,m,n as h,r as g,s as _,v,w as y}from"./hud-ClgyzRfd.js";document.head.appendChild(Object.assign(document.createElement(`style`),{textContent:`
+import{l as e}from"./schedule-Bwl8pwVZ.js";import{A as t,D as n,M as r,N as i,O as a,S as o,_ as s,d as c,f as l,g as u,h as d,i as f,k as p,m,n as h,r as g,s as _,v,w as y}from"./hud-BNSVchXU.js";document.head.appendChild(Object.assign(document.createElement(`style`),{textContent:`
 .board-bg { position: absolute; inset: 0; width: 1920px; height: 1080px; object-fit: cover; }
 .head { font-size: 110px; letter-spacing: -0.035em; font-weight: 800; }
 .head .ln { height: 104px; line-height: 104px; }
