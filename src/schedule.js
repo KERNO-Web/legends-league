@@ -39,28 +39,46 @@ TEAMS.forEach((t) => { BY_NAME.set(norm(t.name), t); BY_NAME.set(norm(t.slug), t
 function team(name) {
   const n = norm(name);
   if (!n) return null;
-  const hit = BY_NAME.get(n) || TEAMS.find((t) => norm(t.name).startsWith(n) || n.startsWith(norm(t.name)));
+  // по началу названия — только от 4 букв, иначе «W» станет WLG, а «B» — Bubliki
+  const hit = BY_NAME.get(n) || (n.length >= 4 && TEAMS.find((t) => norm(t.name).startsWith(n) || n.startsWith(norm(t.name))));
   return hit || { name: String(name).trim(), logo: null };
 }
 
-// «11 CET», «20:30 CET» → часы/минуты
+// «11 CET», «20:30 CET», «18 MSK», «8 PM CET» → часы/минуты по CET
 function parseTime(s) {
-  const m = String(s).match(/(\d{1,2})(?:[:.](\d{2}))?/);
-  return m ? [+m[1], +(m[2] || 0)] : null;
+  const str = String(s || '');
+  const m = str.match(/(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?/i);
+  if (!m) return null;
+  let h = +m[1]; const mi = +(m[2] || 0), ap = (m[3] || '').toLowerCase();
+  if (ap === 'pm' && h < 12) h += 12;
+  if (ap === 'am' && h === 12) h = 0;
+  if (/msk/i.test(str)) h -= 2; // MSK = CET + 2 (зимой)
+  if (h > 23 || mi > 59) return null;
+  return [h, mi];
 }
-// «2:1», «2-0», «1 : 2» → [2, 1]
+// «2:1», «2-0», «1 : 2», «2:01:00» (Sheets сделал из 2:1 время) → [2, 1]. Только вся ячейка целиком:
+// дату вроде «2026-02-01» или «1/2/2026» (Sheets сделал из 1-2 дату) за счёт не принимаем.
 function parseScore(s) {
-  const m = String(s || '').match(/(\d+)\s*[:\-–]\s*(\d+)/);
-  return m ? [+m[1], +m[2]] : null;
+  const m = String(s || '').trim().match(/^(\d)\s*[:\-–]\s*(\d{1,2})(?::00)?$/);
+  if (!m) return null;
+  const sc = [+m[1], +m[2]];
+  return sc[0] <= 5 && sc[1] <= 5 ? sc : null;
+}
+// «20.11», «20/11», «20.11.2026», «Fri 21.11» → [день, месяц]
+function parseDate(s) {
+  const m = String(s || '').match(/(\d{1,2})[./](\d{1,2})(?:[./]\d{2,4})?/);
+  if (!m) return null;
+  const d = +m[1], mo = +m[2];
+  return d >= 1 && d <= 31 && mo >= 1 && mo <= 12 ? [d, mo] : null;
 }
 
-// Формат серии по колонке «Match type»: плей-офф и финалы — BO5, остальное (Swiss) — BO3.
-// Явное «BO3»/«BO5» в ячейке важнее.
+// Формат серии по колонке «Match type»: плей-офф (любые bracket, полуфиналы, финалы) — BO5, Swiss — BO3.
+// Явное «BO3»/«BO5» в ячейке важнее — надёжнее всего писать его прямо в таблицу.
 export function seriesBo(type) {
   const t = String(type || '').toLowerCase();
   const m = t.match(/bo\s*([1-9])/);
   if (m) return +m[1];
-  return /play\s*-?\s*off|final/.test(t) ? 5 : 3;
+  return /play\s*-?\s*off|final|bracket|upper|lower|semi|quarter|grand|decider/.test(t) ? 5 : 3;
 }
 // серия доиграна: у кого-то нужное число побед (BO3 — 2, BO5 — 3)
 export const isDecided = (m) => !!m.score && Math.max(...m.score) >= Math.ceil(m.bo / 2);
@@ -75,9 +93,13 @@ export function buildDays(csv) {
   const byDay = new Map();
   for (const r of rows) {
     const date = (r[iDate] || '').trim(), time = parseTime(r[iTime]);
-    const dm = date.match(/^(\d{1,2})[./](\d{1,2})/);
-    if (!dm || !time) continue; // строки без даты — будущие туры, пары ещё неизвестны
-    const [d, mo] = [+dm[1], +dm[2]];
+    const dm = parseDate(date);
+    if (!dm || !time) {
+      // без даты — будущие туры, пары неизвестны; а дата есть, но не разобралась — сообщаем
+      if (date && typeof console !== 'undefined') console.warn('LPL: строка таблицы не разобрана', r.slice(0, 8).join(' | '));
+      continue;
+    }
+    const [d, mo] = dm;
     const at = new Date(Date.UTC(YEAR, mo - 1, d, time[0] - CET_OFFSET, time[1]));
     const id = `${YEAR}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     if (!byDay.has(id)) byDay.set(id, { id, label: `${d} ${MONTHS[mo - 1]}`, matches: [] });
@@ -93,10 +115,20 @@ export function buildDays(csv) {
 
 export const snapshotDays = () => buildDays(SNAPSHOT_CSV);
 
+// таблица отдала именно таблицу (а не страницу входа Google, если доступ закроют)
+export const looksLikeSheet = (csv) => /match\s*type/i.test(String(csv).split('\n')[0] || '');
+
 export async function loadDays() {
-  const res = await fetch(SHEET_URL, { cache: 'no-store' });
-  if (!res.ok) throw new Error('sheet ' + res.status);
-  const days = buildDays(await res.text());
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 15000);
+  let text;
+  try {
+    const res = await fetch(SHEET_URL, { cache: 'no-store', signal: ctl.signal });
+    if (!res.ok) throw new Error('sheet ' + res.status);
+    text = await res.text();
+  } finally { clearTimeout(timer); }
+  if (!looksLikeSheet(text)) throw new Error('sheet not csv');
+  const days = buildDays(text);
   if (!days.length) throw new Error('sheet empty');
   return days;
 }

@@ -26,7 +26,9 @@ const T = { xs: 0.2, s: 0.35, m: 0.6, l: 1.2 };
 /* ---------------- ссылки, меню ---------------- */
 $$('[data-twitch]').forEach((a) => { a.href = TWITCH_URL; a.target = '_blank'; a.rel = 'noopener'; });
 const rules = $('[data-rules]');
-if (rules) rules.href = RULES_URL;
+// ссылки-заглушки не кликаются и не кидают страницу наверх: регламента ещё нет — прячем, спонсоры — просто логотипы
+if (rules) { if (RULES_URL && RULES_URL !== '#') { rules.href = RULES_URL; rules.target = '_blank'; rules.rel = 'noopener'; } else rules.hidden = true; }
+$$('.sponsor[href="#"]').forEach((a) => a.removeAttribute('href'));
 
 
 /* ---------------- навигация ---------------- */
@@ -158,11 +160,18 @@ function sideHTML(t, cls) {
   const logo = t.logo ? `<img src="${t.logo}" alt="" width="60" height="60" loading="lazy">` : '<span class="tbd" aria-hidden="true"></span>';
   return `<div class="side ${cls}">${logo}<span title="${esc(t.name)}">${esc(t.name)}</span></div>`;
 }
+// LIVE до победного счёта; если счёт забыли вписать — гаснет, когда начался следующий матч
+// (одна трансляция, два LIVE сразу быть не может) или через MATCH_MINUTES
+function nextStart(m) {
+  let best = Infinity;
+  for (const d of DAYS) for (const x of d.matches) { const s = x.at.getTime(); if (s > m.at.getTime() && s < best) best = s; }
+  return best;
+}
 function matchState(m, t) {
   if (isDecided(m)) return 'done';
   const start = m.at.getTime();
   if (t < start) return 'upcoming';
-  return t < start + MATCH_MINUTES * 60000 ? 'live' : 'done';
+  return t < Math.min(start + MATCH_MINUTES * 60000, nextStart(m)) ? 'live' : 'done';
 }
 function rowHTML(m, dayLabel, t) {
   const st = matchState(m, t);
@@ -172,22 +181,31 @@ function rowHTML(m, dayLabel, t) {
   // промежуточный счёт серии (1:0, 1:1) показываем рядом с LIVE
   if (st === 'live') return `<a class="match shape is-live" href="${TWITCH_URL}" target="_blank" rel="noopener" aria-label="${esc(names)}, live now${m.score ? ', ' + m.score.join(':') : ''}, watch on Twitch">
     ${sides}<span class="time"><span class="live-badge"><i aria-hidden="true"></i>LIVE</span>${m.score ? `<span class="score score--live">${m.score[0]}<i>:</i>${m.score[1]}</span>` : ''}</span></a>`;
-  // сыгран: вместо времени счёт
-  if (m.score) return `<article class="match shape is-done has-score" aria-label="${esc(names)}, ${m.score.join(':')}">
-    ${sides}<span class="time"><span class="score">${m.score[0]}<i>:</i>${m.score[1]}</span></span></article>`;
-  const shift = dayLabel && fmtDay(m.at) !== dayLabel ? `<small class="time__day">${fmtDay(m.at)}</small>` : '';
+  // сыгран: вместо времени счёт (в Results под счётом дата, там дни вперемешку).
+  // Недоигранный счёт (заранее вписанный 0-0 или забытый 1:0) за итог не выдаём — там время.
+  if (isDecided(m)) return `<article class="match shape is-done has-score" aria-label="${esc(names)}, ${m.score.join(':')}, ${fmtDay(m.at)}">
+    ${sides}<span class="time"><span><span class="score">${m.score[0]}<i>:</i>${m.score[1]}</span>${dayLabel ? '' : `<small class="time__day">${fmtDay(m.at)}</small>`}</span></span></article>`;
+  // дата под временем: если день по выбранному поясу другой, а в Results — всегда
+  const shift = !dayLabel || fmtDay(m.at) !== dayLabel ? `<small class="time__day">${fmtDay(m.at)}</small>` : '';
   return `<article class="match shape${st === 'done' ? ' is-done' : ''}" aria-label="${esc(names)}, ${fmtTime(m.at)} ${state.zone.label}">
     ${sides}<time class="time" datetime="${m.at.toISOString()}"><span>${fmtTime(m.at)}${shift}</span></time></article>`;
+}
+// Upcoming — только несыгранные (впереди и LIVE); сыгранные живут в Results.
+// Дни, где всё сыграно, из ряда дней пропадают.
+function upcomingDays(t = now()) {
+  return DAYS.map((d) => ({ ...d, matches: d.matches.filter((m) => matchState(m, t) !== 'done') })).filter((d) => d.matches.length);
 }
 function rowsHTML() {
   const t = now();
   if (state.tab === 'results') {
-    const done = DAYS.flatMap((d) => d.matches).filter(isDecided).sort((x, y) => y.at - x.at);
+    const done = DAYS.flatMap((d) => d.matches).filter((m) => matchState(m, t) === 'done').sort((x, y) => y.at - x.at);
     if (!done.length) return `<div class="empty shape"><strong>No results yet</strong><p>Scores appear here as soon as the first series are played.</p></div>`;
     return done.map((m) => rowHTML(m, null, t)).join('');
   }
-  const day = DAYS.find((d) => d.id === state.day);
-  if (!day) return `<div class="empty shape"><strong>Schedule coming soon</strong><p>Match times will be published shortly.</p></div>`;
+  const day = upcomingDays(t).find((d) => d.id === state.day);
+  if (!day) return DAYS.length
+    ? `<div class="empty shape"><strong>No upcoming matches</strong><p>All published matches are played. See the scores in Results.</p></div>`
+    : `<div class="empty shape"><strong>Schedule coming soon</strong><p>Match times will be published shortly.</p></div>`;
   return day.matches.map((m) => rowHTML(m, day.label, t)).join('');
 }
 function bindRows() {
@@ -199,7 +217,8 @@ function bindRows() {
 // смена дня/вкладки: строки уходят за 200 мс, новые входят по 350 мс с шагом 40
 let swap = null;
 function renderRows(animate = true) {
-  const apply = () => { rowsEl.innerHTML = rowsHTML(); bindRows(); };
+  // opacity сбрасываем: прерванное затухание (новые данные посреди смены вкладки) не должно оставить строки невидимыми
+  const apply = () => { gsap.set(rowsEl, { opacity: 1 }); rowsEl.innerHTML = rowsHTML(); bindRows(); };
   swap?.kill();
   if (!animate) { apply(); return; }
   if (reduced) {
@@ -212,19 +231,22 @@ function renderRows(animate = true) {
     .add(apply)
     .add(() => gsap.fromTo([...rowsEl.children], { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: T.s, ease: 'main', stagger: 0.04, clearProps: 'transform' }));
 }
-// день по умолчанию: где идёт матч, иначе ближайший с предстоящими, иначе последний
+// день по умолчанию: где идёт матч, иначе ближайший с предстоящими
 function pickDay() {
-  const t = now();
-  const d = DAYS.find((x) => x.matches.some((m) => matchState(m, t) === 'live'))
-    || DAYS.find((x) => x.matches.some((m) => matchState(m, t) === 'upcoming'))
-    || DAYS[DAYS.length - 1];
+  const t = now(), up = upcomingDays(t);
+  const d = up.find((x) => x.matches.some((m) => matchState(m, t) === 'live')) || up[0];
   return d?.id;
 }
 function renderDays() {
-  if (!DAYS.some((d) => d.id === state.day)) state.day = pickDay();
-  daysEl.innerHTML = DAYS.map((d) => `<button class="chip${d.id === state.day ? ' is-on' : ''}" role="tab" aria-selected="${d.id === state.day}" data-day="${d.id}"><span>${d.label}</span></button>`).join('') + '<span class="seg__ink" aria-hidden="true"></span>';
+  const up = upcomingDays(), prev = state.day;
+  // выбранный руками день доигран и пропал — снова подбираем день сами
+  if (!up.some((d) => d.id === state.day)) { state.day = pickDay(); state.dayPicked = false; }
+  const changed = state.day !== prev || !daysEl.querySelector('.chip');
+  const keep = daysEl.scrollLeft;
+  daysEl.innerHTML = up.map((d) => `<button class="chip${d.id === state.day ? ' is-on' : ''}" role="tab" aria-selected="${d.id === state.day}" data-day="${d.id}"><span>${d.label}</span></button>`).join('') + '<span class="seg__ink" aria-hidden="true"></span>';
   placeInk(daysEl, true);
-  revealDay(true);
+  // ряд дней прокручиваем к выбранному, только если день сменился — ручную прокрутку не сбиваем
+  if (changed) revealDay(true); else { daysEl.scrollLeft = keep; daysCut(); }
 }
 // много игровых дней: ряд прокручивается, выбранный день держим в зоне видимости
 function daysCut() {
@@ -294,22 +316,41 @@ addEventListener('resize', inks);
 // живые данные: сразу и потом раз в 2 минуты; перерисовка только если что-то поменялось
 let lastSig = '';
 const sig = () => JSON.stringify(DAYS.map((d) => [d.id, d.matches.map((m) => [m.a?.name, m.b?.name, +m.at, m.score, matchState(m, now())])]));
-async function refresh() {
-  try {
-    const fresh = await loadDays();
-    DAYS = fresh;
-  } catch { /* таблица недоступна — остаёмся на снимке */ }
+// перерисовка, если поменялись данные или наступило время (матч начался/кончился) — без запроса к таблице
+function rerender() {
   const s = sig();
   if (s === lastSig) return;
-  const first = !lastSig;
   lastSig = s;
   // пока посетитель сам не выбрал день — показываем актуальный по свежим данным (в снимке новых дней может не быть)
   if (!state.dayPicked) state.day = pickDay();
   renderDays();
-  renderRows(!first && !reduced);
+  renderRows(!reduced);
+  renderAside();
+}
+// подпись у заголовка: до старта — дата старта; если таблица не отвечает — честно говорим, что данные сохранённые
+let live = false;
+const asideEl = $('#matches .head__aside');
+function renderAside() {
+  if (!asideEl) return;
+  asideEl.textContent = !live && now() > new Date(SEASON_START).getTime() ? 'Saved schedule · reconnecting'
+    : now() < new Date(SEASON_START).getTime() ? 'Season starts 20 Nov' : 'Season 5 · 20 Nov — 10 Dec';
+}
+// ответы, пришедшие не по порядку, не перетирают свежие данные старыми
+let reqNo = 0;
+async function refresh() {
+  const my = ++reqNo;
+  try {
+    const fresh = await loadDays();
+    if (my !== reqNo) return;
+    DAYS = fresh; live = true;
+  } catch { if (my === reqNo) live = false; /* таблица недоступна — остаёмся на последних данных */ }
+  renderAside();
+  rerender();
 }
 lastSig = sig();
 refresh();
+setInterval(() => { if (!document.hidden) rerender(); }, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 setInterval(() => { if (!document.hidden) refresh(); }, 120000);
 
 reveal('.mc', [$('.mc')]);
@@ -426,23 +467,31 @@ $$('.sponsor').forEach((s) => {
   });
 });
 
-// обратный отсчёт одной строкой: «Starts in 2 d 8 h», меньше суток — «8 h 10 m», после старта — Live now
-const cdEl = $('[data-countdown]');
-const target = new Date(SEASON_START).getTime();
-function tick() {
-  const s = Math.max(0, Math.floor((target - Date.now()) / 1000));
-  if (s === 0) {
-    cdEl.innerHTML = '<span class="live">Live now</span>';
-    $('.screen__label').textContent = 'Broadcast is';
-    $('.screen__date').textContent = 'Live';
-    return false;
-  }
-  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
-  const txt = d >= 1 ? `Starts in ${d} d ${h} h` : h >= 1 ? `Starts in ${h} h ${m} m` : `Starts in ${m} m`;
-  if (cdEl.textContent !== txt) cdEl.textContent = txt;
-  return true;
+// экран трансляции по расписанию: идёт матч — Live; иначе ближайший матч и отсчёт до него; всё сыграно — сезон окончен
+const cdEl = $('[data-countdown]'), scrLabel = $('.screen__label'), scrDate = $('.screen__date');
+const fmtLong = (d) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', timeZone: state.zone.tz }).format(d);
+function setScreen(label, date, cd) {
+  if (scrLabel.textContent !== label) scrLabel.textContent = label;
+  if (scrDate.textContent !== date) scrDate.textContent = date;
+  if (cdEl.innerHTML !== cd) cdEl.innerHTML = cd;
 }
-if (tick()) { const iv = setInterval(() => { if (!tick()) clearInterval(iv); }, 15000); }
+function tick() {
+  const t = now(), all = DAYS.flatMap((d) => d.matches);
+  if (all.some((m) => matchState(m, t) === 'live')) return setScreen('Broadcast is', 'Live', '<span class="live">Live now</span>');
+  const next = all.filter((m) => matchState(m, t) === 'upcoming').sort((a, b) => a.at - b.at)[0];
+  if (!next) {
+    const last = all.length ? Math.max(...all.map((m) => +m.at)) : 0;
+    // расписание дальше ещё не опубликовано — без даты; после финала (10 Dec) — сезон окончен
+    return t > Date.parse('2026-12-11T00:00:00Z') ? setScreen('Season 5', 'Completed', 'Thanks for watching')
+      : setScreen('Next broadcast', 'To be announced', last ? 'Schedule updates soon' : '');
+  }
+  const s = Math.max(0, Math.floor((next.at - t) / 1000));
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+  const txt = d >= 1 ? `Starts in ${d} d ${h} h` : h >= 1 ? `Starts in ${h} h ${m} m` : `Starts in ${Math.max(1, m)} m`;
+  setScreen(t < new Date(SEASON_START).getTime() ? 'Broadcast starts' : 'Next broadcast', fmtLong(next.at), txt);
+}
+tick();
+setInterval(tick, 15000);
 
 
 /* ---------------- футер: кристаллы чуть доворачиваются при прокрутке к низу ---------------- */
