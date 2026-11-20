@@ -137,15 +137,11 @@ export function gline(S, x, y, w) {
 // ---------- эффекты ----------
 const TILE = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='300' height='260'><g transform='scale(1.25)' fill='COLOR'><path d='M0 0H240L227 8H13L0 0Z M240 0L120 208V192L227 8L240 0Z M120 208L0 0L13 8L120 192V208Z M38 22.04H202L189 30.04H51L38 22.04Z M202 22.04L120 163.92V147.92L189 30.04L202 22.04Z M120 163.92L38 22.04L51 30.04L120 147.92V163.92Z'/></g></svg>`)}")`;
 export function pattern(S) {
+  // как на EPC: спокойный дрейф ~5.7 px/с (шаг плитки 300×260 за 70 с), без бегущей полосы, тихая прозрачность
   const p = el('div', 'pat', S);
-  const base = el('i', '', p), hi = el('i', 'hi', p);
-  base.style.setProperty('--tile', TILE.replace('COLOR', encodeURIComponent('rgba(185,166,220,0.16)')));
-  hi.style.setProperty('--tile', TILE.replace('COLOR', encodeURIComponent('rgba(214,190,255,0.55)')));
-  // плитка плывёт на один шаг по диагонали — петля без стыка
-  gsap.to([base, hi], { x: 300, y: 260, duration: 48, ease: 'none', repeat: -1 });
-  // светлая полоса проходит по сетке
-  gsap.timeline({ delay: 1.2, repeat: -1, repeatDelay: 6 })
-    .fromTo(hi, { webkitMaskPosition: '100% 0', maskPosition: '100% 0' }, { webkitMaskPosition: '-50% 0', maskPosition: '-50% 0', duration: 3.2, ease: 'sine.inOut' });
+  const base = el('i', '', p);
+  base.style.setProperty('--tile', TILE.replace('COLOR', encodeURIComponent('rgba(185,166,220,0.1)')));
+  gsap.to(base, { x: 300, y: 260, duration: 70, ease: 'none', repeat: -1 });
   return p;
 }
 const rnd = (() => { let s = 11; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
