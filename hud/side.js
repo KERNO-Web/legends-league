@@ -1,13 +1,13 @@
 // Полноэкранные заставки (Starting / BRB / Offline / Ending): арт справа, крупный заголовок слева.
 import {
-  gsap, stage, el, at, artScene, logoBig, season, social, sponsors, title, gline, motes, flares,
+  gsap, pattern, stage, el, at, artScene, logoBig, season, social, sponsors, title, gline, motes, flares,
   shimmer, sweep, drift, holo, lineSpark, titleGlint, inTitle, inLine, inFade, inSub, inArt, replayOnShow, q,
 } from './hud.js';
 
 export function sideScene(cfg) {
   const S = stage();
   const A = artScene(S, cfg.art, { video: cfg.video });
-  const pat = el('img', 'pattern', S); pat.src = 'img/pattern.webp'; pat.alt = '';
+  const pat = pattern(S);
   const fx = el('div', 'layer', S);
   cfg.extra?.(S, fx, A);
   const lines = (q('title') ? q('title').split('|') : cfg.lines);
@@ -18,13 +18,13 @@ export function sideScene(cfg) {
   cfg.after?.(S, { T, sub, G });
 
   // петли, которые живут всегда
-  drift(A.art, cfg.drift);
+  drift(A.cam, cfg.drift);
   shimmer(A.shimmer, cfg.hue ?? 26);
   if (cfg.motes) motes(fx, cfg.motes[0], cfg.motes[1]);
   if (cfg.flares) flares(fx, cfg.flares, cfg.flareEvery ?? 7);
   holo(sp, { delay: 3, every: 9 });
   lineSpark(G, { delay: 3.4, every: 8 });
-  titleGlint(T, { delay: 4.2, every: 11 });
+  titleGlint(T, { delay: 1.9, every: 7 });
   sweep(A.sweep, { delay: 6, dur: 2.6, every: 9 });
 
   // вход

@@ -17,8 +17,9 @@ document.head.appendChild(Object.assign(document.createElement('style'), { textC
 export function board({ head, date, ruleY = 943, bg = 'img/bg-stage.webp', mask = 'img/mask-stage.webp', brandAt = [1473, 86], dateLine = 400, dateLineAt = [75, 248], headAt = [75, 72] }) {
   const S = stage();
   const bgW = el('div', 'layer', S);
-  pic(bg, 'board-bg', bgW);
-  const litS = el('div', 'lit', bgW); litS.style.setProperty('--mask', cssUrl(mask));
+  const cam = el('div', 'layer', bgW); // фон и блики по нему двигаются вместе
+  pic(bg, 'board-bg', cam);
+  const litS = el('div', 'lit', cam); litS.style.setProperty('--mask', cssUrl(mask));
   const sw = el('div', 'sweep', litS);
   const fx = el('div', 'layer', S);
   const back = el('div', 'layer', S); // персонажи и кристаллы — под шапкой и подвалом
@@ -33,7 +34,7 @@ export function board({ head, date, ruleY = 943, bg = 'img/bg-stage.webp', mask 
   sweep(sw, { delay: 5, dur: 2.6, every: 10, from: 300, to: 2400 });
   holo(sp, { delay: 3, every: 9 });
   if (DL) lineSpark(DL, { delay: 3.6, every: 9 });
-  titleGlint(H, { delay: 4.5, every: 12 });
+  titleGlint(H, { delay: 1.6, every: 8 });
 
   const tl = gsap.timeline();
   tl.fromTo(bgW, { opacity: 0, scale: 1.04 }, { opacity: 1, scale: 1, duration: 1.2, ease: 'main' }, 0);
@@ -45,7 +46,7 @@ export function board({ head, date, ruleY = 943, bg = 'img/bg-stage.webp', mask 
   if (R) tl.fromTo(R, { scaleX: 0 }, { scaleX: 1, duration: 1.1, ease: 'main' }, 0.6);
   inFade(tl, [so, sp], 0.9, { y: 12, stagger: 0.1 });
   replayOnShow(tl);
-  return { S, fx, back, content, tl, bgW };
+  return { S, fx, back, content, tl, bgW, cam };
 }
 
 // кристалл-слой, который парит

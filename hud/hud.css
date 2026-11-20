@@ -38,7 +38,12 @@ img { display: block; }
 .flare b { width: 110px; height: 110px; margin: -55px 0 0 -55px; border-radius: 50%; background: radial-gradient(closest-side, #fffbef, rgba(255,200,140,.55) 25%, rgba(255,160,230,.15) 60%, transparent); }
 .flare s { width: 320px; height: 3px; margin: -1.5px 0 0 -160px; background: linear-gradient(90deg, transparent, rgba(255,240,220,.95), transparent); }
 .flare u { width: 3px; height: 240px; margin: -120px 0 0 -1.5px; background: linear-gradient(180deg, transparent, rgba(255,240,220,.9), transparent); }
-.pattern { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+.cam { transform-origin: 62% 48%; will-change: transform; }
+/* паттерн треугольников: плитка медленно плывёт по диагонали, по сетке иногда проходит светлая полоса */
+.pat { position: absolute; inset: 0; pointer-events: none;
+  -webkit-mask: linear-gradient(153deg, rgba(0,0,0,.95) 0%, rgba(0,0,0,.5) 30%, transparent 60%); mask: linear-gradient(153deg, rgba(0,0,0,.95) 0%, rgba(0,0,0,.5) 30%, transparent 60%); }
+.pat i { position: absolute; inset: -260px -300px; background-image: var(--tile); background-size: 300px 260px; will-change: transform; }
+.pat i.hi { -webkit-mask: linear-gradient(115deg, transparent 42%, #000 50%, transparent 58%) 0 0 / 300% 100% no-repeat; mask: linear-gradient(115deg, transparent 42%, #000 50%, transparent 58%) 0 0 / 300% 100% no-repeat; }
 
 /* шапка и подвал */
 .logo { left: 75px; top: 75px; width: 438px; }
@@ -65,7 +70,12 @@ img { display: block; }
 .title { left: 75px; font-weight: 800; font-size: 179px; line-height: 155px; letter-spacing: -0.035em; text-transform: uppercase; color: var(--cream); white-space: nowrap; }
 .title .ln { display: block; overflow: hidden; height: var(--pitch, 155px); line-height: var(--pitch, 155px); padding-right: 0.05em; }
 .title .ln > span { display: inline-block; will-change: transform; }
-.title .ch { display: inline-block; }
+.title .ch, .head .ch { display: inline-block; color: transparent; -webkit-background-clip: text; background-clip: text;
+  background-image: linear-gradient(100deg, transparent 0 36%, rgba(255,250,236,1) 44%, #ffc95e 50%, rgba(255,250,236,1) 56%, transparent 64% 100%), linear-gradient(180deg, #fffaf0 0%, #f2ede0 55%, #e9dcc4 100%);
+  background-size: var(--tw, 1000px) 100%, 100% 100%; background-repeat: no-repeat;
+  background-position: calc(var(--shine, -2000px) - var(--off, 0px)) 0, 0 0; }
+/* свечение заголовка не делаем: text-shadow и drop-shadow с background-clip:text рисуют плашку вокруг букв */
+.title, .head { perspective: 900px; }
 .sub { left: 75px; font-weight: 700; font-size: 34.2px; line-height: 1; text-transform: uppercase; letter-spacing: 0.005em; white-space: nowrap; }
 .head { left: 75px; top: 72px; font-weight: 700; font-size: 104px; line-height: 1; letter-spacing: -0.03em; text-transform: uppercase; white-space: nowrap; }
 .head .ln { display: block; overflow: hidden; padding-bottom: 0.08em; }

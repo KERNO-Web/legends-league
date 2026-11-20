@@ -52,21 +52,24 @@ export function stage() {
 // art: имя арта (img/art-NAME.webp + img/mask-NAME.webp)
 export function artScene(S, name, { video } = {}) {
   const wrap = el('div', 'layer', S);
-  const art = pic(`img/art-${name}.webp`, 'art', wrap);
+  // cam — арт и всё, что повторяет его форму (перелив, блик), двигаются только вместе, иначе контуры задваиваются
+  const cam = el('div', 'layer cam', wrap);
+  const art = pic(`img/art-${name}.webp`, 'art', cam);
   const mask = cssUrl(`img/mask-${name}.webp`);
-  const lit = el('div', 'lit', wrap); lit.style.setProperty('--mask', mask);
+  const lit = el('div', 'lit', cam); lit.style.setProperty('--mask', mask);
   const sh = el('div', 'shimmer', lit); sh.style.backgroundImage = `url(img/art-${name}.webp)`;
-  const litS = el('div', 'lit', wrap); litS.style.setProperty('--mask', mask);
+  const litS = el('div', 'lit', cam); litS.style.setProperty('--mask', mask);
   const sw = el('div', 'sweep', litS);
-  if (video) tryVideo(wrap, art, video);
-  return { wrap, art, shimmer: sh, sweep: sw, lit };
+  if (video) tryVideo(cam, art, video, [lit, litS]);
+  return { wrap, cam, art, shimmer: sh, sweep: sw, lit };
 }
 // живое видео-фон (например, из Kling), если файл лежит рядом; иначе остаётся картинка
-function tryVideo(wrap, art, src) {
+function tryVideo(wrap, art, src, overlays = []) {
   const mk = () => { const v = el('video', 'art'); Object.assign(v, { src, muted: true, playsInline: true, preload: 'auto' }); v.muted = true; return v; };
   const a = mk(), b = mk();
   a.addEventListener('canplay', () => {
     wrap.insertBefore(a, art.nextSibling); wrap.insertBefore(b, a.nextSibling); art.style.opacity = 0;
+    overlays.forEach((o) => { o.style.display = 'none'; }); // перелив и блики рассчитаны на картинку, на видео их не накладываем
     b.style.opacity = 0; a.play();
     // бесшовно: за 0.8 с до конца поверх запускается копия и плавно проявляется
     let cur = a, nxt = b;
@@ -117,6 +120,11 @@ export function title(S, lines, x, y, size, cls = 'title', pitch) {
     const l = el('span', 'ln', t); const inner = el('span', '', l);
     [...ln].forEach((c) => { el('span', 'ch', inner, c === ' ' ? '&nbsp;' : c); });
   });
+  // блеск идёт по всему слову: каждой букве — её смещение от начала строки
+  requestAnimationFrame(() => {
+    t.style.setProperty('--tw', t.offsetWidth + 'px');
+    t.querySelectorAll('.ch').forEach((c) => c.style.setProperty('--off', c.offsetLeft + 'px'));
+  });
   return t;
 }
 export function gline(S, x, y, w) {
@@ -127,6 +135,19 @@ export function gline(S, x, y, w) {
 }
 
 // ---------- эффекты ----------
+const TILE = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='300' height='260'><g transform='scale(1.25)' fill='COLOR'><path d='M0 0H240L227 8H13L0 0Z M240 0L120 208V192L227 8L240 0Z M120 208L0 0L13 8L120 192V208Z M38 22.04H202L189 30.04H51L38 22.04Z M202 22.04L120 163.92V147.92L189 30.04L202 22.04Z M120 163.92L38 22.04L51 30.04L120 147.92V163.92Z'/></g></svg>`)}")`;
+export function pattern(S) {
+  const p = el('div', 'pat', S);
+  const base = el('i', '', p), hi = el('i', 'hi', p);
+  base.style.setProperty('--tile', TILE.replace('COLOR', encodeURIComponent('rgba(185,166,220,0.16)')));
+  hi.style.setProperty('--tile', TILE.replace('COLOR', encodeURIComponent('rgba(214,190,255,0.55)')));
+  // плитка плывёт на один шаг по диагонали — петля без стыка
+  gsap.to([base, hi], { x: 300, y: 260, duration: 48, ease: 'none', repeat: -1 });
+  // светлая полоса проходит по сетке
+  gsap.timeline({ delay: 1.2, repeat: -1, repeatDelay: 6 })
+    .fromTo(hi, { webkitMaskPosition: '100% 0', maskPosition: '100% 0' }, { webkitMaskPosition: '-50% 0', maskPosition: '-50% 0', duration: 3.2, ease: 'sine.inOut' });
+  return p;
+}
 const rnd = (() => { let s = 11; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
 
 export function motes(S, n, box) {
@@ -197,22 +218,19 @@ export function lineSpark(g, { delay = 3, every = 8 } = {}) {
     .to(sp, { opacity: 0, duration: 0.4, ease: 'sine.in' }, 0.9);
 }
 // блик по буквам заголовка: светлая полоса проходит по тексту
-export function titleGlint(t, { delay = 2, every = 10 } = {}) {
-  const chars = [...t.querySelectorAll('.ch')];
-  const tl = gsap.timeline({ delay, repeat: -1, repeatDelay: every });
-  chars.forEach((c, i) => {
-    tl.to(c, { color: '#fff8e6', textShadow: '0 0 14px rgba(255,214,150,.45)', duration: 0.16, ease: 'sine.out' }, i * 0.06)
-      .to(c, { color: '#f2ede0', textShadow: '0 0 0px rgba(255,214,150,0)', duration: 0.45, ease: 'sine.in' }, i * 0.06 + 0.16);
-  });
-  return tl;
+export function titleGlint(t, { delay = 2, every = 8 } = {}) {
+  // полоса света проходит внутри букв по всему заголовку
+  const w = () => t.offsetWidth || 1000;
+  return gsap.timeline({ delay, repeat: -1, repeatDelay: every })
+    .fromTo(t, { '--shine': () => -w() * 0.7 + 'px' }, { '--shine': () => w() * 1.1 + 'px', duration: 1.7, ease: 'sine.inOut' });
 }
 
 // ---------- вход ----------
 // буквы поднимаются из-под маски с лёгким размытием и фиолетовым отливом
 export function inTitle(tl, t, pos = 0) {
   t.querySelectorAll('.ln > span').forEach((ln, li) => {
-    tl.fromTo(ln.querySelectorAll('.ch'), { yPercent: 105, filter: 'blur(6px)', color: '#c79bff' },
-      { yPercent: 0, filter: 'blur(0px)', color: '#f2ede0', duration: 0.9, ease: 'main', stagger: 0.03 }, pos + li * 0.14);
+    tl.fromTo(ln.querySelectorAll('.ch'), { yPercent: 110, rotationX: -75, transformOrigin: '50% 100%', filter: 'blur(8px) brightness(2.4)' },
+      { yPercent: 0, rotationX: 0, filter: 'blur(0px) brightness(1)', duration: 1, ease: 'main', stagger: 0.035, clearProps: 'filter,transform' }, pos + li * 0.14);
   });
 }
 export function inLine(tl, g, pos) {
@@ -232,9 +250,14 @@ export function inArt(tl, wrap, pos = 0) {
 
 // повторить вход, когда OBS снова показывает сцену (без перезагрузки источника)
 // для рендера видео: остановить живое время и выставлять кадры вручную
-window.__hud = { seek: (t) => { gsap.globalTimeline.pause(); gsap.globalTimeline.time(t, false); }, now: () => gsap.globalTimeline.time() };
+// часы GSAP отключаются от экрана и двигаются вручную — каждый кадр видео ровно через 1/30 с
+let manual = false;
+const takeClock = () => { if (!manual) { gsap.ticker.remove(gsap.updateRoot); manual = true; } };
+window.__hud = { seek: (t) => { takeClock(); gsap.updateRoot(t); }, now: () => gsap.ticker.time };
 
 export function replayOnShow(tl) {
+  // ?hold — заморозить сцену в самом начале (для покадрового рендера видео с появлением)
+  if (P.has('hold')) { takeClock(); window.__hud.start = gsap.ticker.time; gsap.updateRoot(window.__hud.start); return; }
   // ?t=0.8 — заморозить вход на этой секунде (для проверки кадров)
   if (P.has('t')) { const t = +P.get('t'); gsap.globalTimeline.getChildren(true, false, true).forEach((x) => x.pause()); tl.seek(t).pause(); return; }
   addEventListener('obsSourceActiveChanged', (e) => { if (e.detail?.active) tl.restart(); });

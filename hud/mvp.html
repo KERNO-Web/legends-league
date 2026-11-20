@@ -25,8 +25,7 @@
   // ?name=Bruuu_uuuh&k=12&d=3&a=9 — ник и статистика игрока
   const B = board({ head: 'MATCH MVP', date: '', dateLine: 0, ruleY: 0, bg: 'img/art-mvp.webp', mask: 'img/mask-mvp.webp', headAt: [120, 72] });
   const C = B.content, tl = B.tl;
-  const bg = B.bgW.querySelector('img');
-  drift(bg, { s: 1.03, x: 10, y: -6, dur: 18 });
+  drift(B.cam, { s: 1.03, x: 10, y: -6, dur: 18 });
   // перелив по кристаллам и ленте рамки
   const lit = B.bgW.querySelector('.lit');
   const sh = el('div', 'shimmer', lit); sh.style.backgroundImage = 'url(img/art-mvp.webp)'; lit.prepend(sh);
