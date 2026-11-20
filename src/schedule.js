@@ -6,7 +6,9 @@ import { SNAPSHOT_CSV } from './schedule-snapshot.js';
 
 export const SHEET_ID = '1vTxypUCtYqdDUHwvC9B90nLVG50ZRAl07A4haHOLUcI';
 export const MATCH_GID = '322290857';
-export const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${MATCH_GID}`;
+// export отдаёт ячейки как они видны в таблице. gviz угадывает тип колонки и молча выкидывает
+// ячейки «не того» типа (счёт 2-0 среди 2:1, дату-текст среди дат), поэтому не он.
+export const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${MATCH_GID}`;
 const YEAR = 2026;
 const CET_OFFSET = 1; // ноябрь–декабрь: CET = UTC+1
 
@@ -31,7 +33,7 @@ const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const BY_NAME = new Map();
 TEAMS.forEach((t) => { BY_NAME.set(norm(t.name), t); BY_NAME.set(norm(t.slug), t); });
 // написание в таблице, которое отличается от названий на сайте
-[['zena', 'zena'], ['stuttgart', 'stuttgart'], ['vfb', 'stuttgart'], ['colossal', 'colossal'], ['bomba', 'bomba'], ['dominion', 'dominion-goblins'], ['cultofcostom', 'cult-of-costom']]
+[['zena', 'zena'], ['stuttgart', 'stuttgart'], ['vfb', 'stuttgart'], ['vfbstuttgart', 'stuttgart'], ['colossal', 'colossal'], ['bomba', 'bomba'], ['dominion', 'dominion-goblins'], ['cultofcostom', 'cult-of-costom']]
   .forEach(([k, slug]) => BY_NAME.set(k, TEAMS.find((t) => t.slug === slug)));
 
 function team(name) {
@@ -62,7 +64,7 @@ export function buildDays(csv) {
   const byDay = new Map();
   for (const r of rows) {
     const date = (r[iDate] || '').trim(), time = parseTime(r[iTime]);
-    const dm = date.match(/^(\d{1,2})\.(\d{1,2})/);
+    const dm = date.match(/^(\d{1,2})[./](\d{1,2})/);
     if (!dm || !time) continue; // строки без даты — будущие туры, пары ещё неизвестны
     const [d, mo] = [+dm[1], +dm[2]];
     const at = new Date(Date.UTC(YEAR, mo - 1, d, time[0] - CET_OFFSET, time[1]));

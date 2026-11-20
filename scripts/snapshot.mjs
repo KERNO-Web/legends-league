@@ -1,6 +1,6 @@
 // Снимок расписания из Google-таблицы в src/schedule-snapshot.js (запасной вариант, если Google недоступен).
 import fs from 'node:fs';
-const url = 'https://docs.google.com/spreadsheets/d/1vTxypUCtYqdDUHwvC9B90nLVG50ZRAl07A4haHOLUcI/gviz/tq?tqx=out:csv&gid=322290857';
+import { SHEET_URL as url } from '../src/schedule.js';
 const res = await fetch(url);
 if (!res.ok) throw new Error('sheet ' + res.status);
 const csv = await res.text();
