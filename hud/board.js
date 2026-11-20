@@ -1,6 +1,6 @@
 // Экраны с данными (расписание, результаты, MVP): общий фон, шапка, подвал, вход.
 import {
-  gsap, stage, el, at, pic, brand, social, sponsors, title, gline, motes, flares, sweep, holo, lineSpark,
+  gsap, cssUrl, stage, el, at, pic, brand, social, sponsors, title, gline, motes, flares, sweep, holo, lineSpark,
   titleGlint, inTitle, inLine, inFade, inSub, replayOnShow,
 } from './hud.js';
 
@@ -18,7 +18,7 @@ export function board({ head, date, ruleY = 943, bg = 'img/bg-stage.webp', mask 
   const S = stage();
   const bgW = el('div', 'layer', S);
   pic(bg, 'board-bg', bgW);
-  const litS = el('div', 'lit', bgW); litS.style.setProperty('--mask', `url(${mask})`);
+  const litS = el('div', 'lit', bgW); litS.style.setProperty('--mask', cssUrl(mask));
   const sw = el('div', 'sweep', litS);
   const fx = el('div', 'layer', S);
   const back = el('div', 'layer', S); // персонажи и кристаллы — под шапкой и подвалом

@@ -1,5 +1,5 @@
 // Рамки под камеры (кастеры, студия): фон с прозрачными окнами, золотой кант, кристаллы по углам.
-import { gsap, stage, el, at, pic, brand, social, sponsors, motes, holo, replayOnShow } from './hud.js';
+import { gsap, cssUrl, stage, el, at, pic, brand, social, sponsors, motes, holo, replayOnShow } from './hud.js';
 
 const css = `
 .fr-bg { position: absolute; inset: 0; background: url(img/bg-frame.webp) 0 0 / 1920px 1080px; }
@@ -47,7 +47,7 @@ export function frameScene({ windows, plates = [], crystals = [], brandAt, brand
   const crs = crystals.map(([src, x, y, w, rot = 0, flip = false]) => {
     const c = at(el('div', 'cr', S), x, y, w);
     pic(src, '', c);
-    const sw = el('i', 'sw', c); sw.style.setProperty('--m', `url(${src})`);
+    const sw = el('i', 'sw', c); sw.style.setProperty('--m', cssUrl(src));
     gsap.set(c, { rotation: rot, scaleX: /x/.test(flip || '') ? -1 : 1, scaleY: /y/.test(flip || '') ? -1 : 1, transformOrigin: '50% 50%' });
     return { c, sw };
   });

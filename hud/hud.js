@@ -14,6 +14,9 @@ export { gsap };
 export const P = new URLSearchParams(location.search);
 export const q = (k, d) => (P.get(k) ?? d);
 export const $ = (s, r = document) => r.querySelector(s);
+// абсолютный адрес: url() внутри CSS-переменных браузер считает от файла стилей (в сборке это assets/), а не от страницы
+export const abs = (p) => new URL(p, document.baseURI).href;
+export const cssUrl = (p) => `url("${abs(p)}")`;
 const NOW_SHIFT = (() => { const v = P.get('now'); const t = v && Date.parse(v); return t ? t - Date.now() : 0; })();
 export const now = () => Date.now() + NOW_SHIFT;
 
@@ -50,7 +53,7 @@ export function stage() {
 export function artScene(S, name, { video } = {}) {
   const wrap = el('div', 'layer', S);
   const art = pic(`img/art-${name}.webp`, 'art', wrap);
-  const mask = `url(img/mask-${name}.webp)`;
+  const mask = cssUrl(`img/mask-${name}.webp`);
   const lit = el('div', 'lit', wrap); lit.style.setProperty('--mask', mask);
   const sh = el('div', 'shimmer', lit); sh.style.backgroundImage = `url(img/art-${name}.webp)`;
   const litS = el('div', 'lit', wrap); litS.style.setProperty('--mask', mask);
@@ -97,7 +100,7 @@ export function social(S, x = 75, y = 986) {
 }
 export function sponsors(S, x = 1172, y = 976, sep = true) {
   const s = at(el('div', 'sponsors', S), x, y);
-  const one = (src, w) => { const d = el('div', 'sp', s); const i = pic(src, '', d); i.style.width = w + 'px'; const h = el('i', 'holo', d); h.style.setProperty('--m', `url(${src})`); return d; };
+  const one = (src, w) => { const d = el('div', 'sp', s); const i = pic(src, '', d); i.style.width = w + 'px'; const h = el('i', 'holo', d); h.style.setProperty('--m', cssUrl(src)); return d; };
   one('img/mionix.svg', 205);
   if (sep) el('i', 'sep', s);
   one('img/blacklyte.svg', 371);

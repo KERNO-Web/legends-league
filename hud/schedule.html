@@ -31,7 +31,7 @@
 </head>
 <body>
 <script type="module">
-  import { gsap, el, at, pic, days, fmtTime, fmtLongDay, wantedDay, teamLogo, q, now } from './hud.js';
+  import { gsap, cssUrl, el, at, pic, days, fmtTime, fmtLongDay, wantedDay, teamLogo, q, now } from './hud.js';
   import { board, crystal } from './board.js';
   await document.fonts.ready;
 
@@ -52,7 +52,7 @@
     const w = el('div', 'tm', parent); at(w, x, y); w.style.gap = gap + 'px'; w.style.height = size + 'px';
     const lg = el('div', 'lg', w); lg.style.width = lg.style.height = size + 'px';
     const src = teamLogo(t);
-    if (src) { pic(src, '', lg); const h = el('i', 'holo', lg); h.style.setProperty('--m', `url(${src})`); }
+    if (src) { pic(src, '', lg); const h = el('i', 'holo', lg); h.style.setProperty('--m', cssUrl(src)); }
     // длинное название — в две строки и мельче, чтобы не наезжать на VS
     const long = name(t).length > 9;
     const nm = el('div', 'nm', w, name(t)); nm.style.fontSize = (long ? nameSize * 0.78 : nameSize) + 'px';
@@ -63,7 +63,7 @@
     const w = el('div', 'stack', parent); at(w, cx, y);
     const lg = el('div', 'lg', w); lg.style.width = lg.style.height = size + 'px';
     const src = teamLogo(t);
-    if (src) { pic(src, '', lg).style.cssText = 'width:100%;height:100%;object-fit:contain'; const h = el('i', 'holo', lg); h.style.setProperty('--m', `url(${src})`); h.style.cssText += ';position:absolute;inset:0;opacity:0;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;background:linear-gradient(115deg,transparent 0 40%,rgba(255,139,216,.95) 45%,#ffe1a8 47.5%,#8bffd9 50%,#7ad8ff 52.5%,#b47cff 55%,transparent 60% 100%);background-size:300% 100%'; }
+    if (src) { pic(src, '', lg).style.cssText = 'width:100%;height:100%;object-fit:contain'; const h = el('i', 'holo', lg); h.style.setProperty('--m', cssUrl(src)); h.style.cssText += ';position:absolute;inset:0;opacity:0;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;background:linear-gradient(115deg,transparent 0 40%,rgba(255,139,216,.95) 45%,#ffe1a8 47.5%,#8bffd9 50%,#7ad8ff 52.5%,#b47cff 55%,transparent 60% 100%);background-size:300% 100%'; }
     const nm = el('div', 'nm', w, name(t)); nm.style.fontSize = fit(name(t), nameSize, nameSize * 0.78) + 'px';
     return w;
   }
