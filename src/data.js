@@ -1,6 +1,6 @@
 // Данные лендинга. Всё, что поменяет организатор, — здесь.
 
-export const TWITCH_URL = 'https://www.twitch.tv/';
+export const TWITCH_URL = 'https://www.twitch.tv/legendpremierleague';
 export const RULES_URL = '#';
 // Матч LIVE с времени начала, пока в Score нет победного счёта (BO3 — 2 победы, BO5 — 3).
 // Страховка, если счёт забыли вписать: позже стольких минут после начала LIVE не горит.
