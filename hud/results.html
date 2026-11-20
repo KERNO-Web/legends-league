@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>LPL S5 · Match results</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=block" rel="stylesheet" />
+  <style>
+    .rs { position: absolute; left: 0; width: 1920px; height: 122px; }
+    /* параллелограммы с кантом: снаружи цвет канта, внутри заливка */
+    .pg { position: absolute; top: 0; height: 122px; --s: 44px; background: var(--edge, rgba(160,120,230,.55));
+      clip-path: polygon(var(--s) 0, 100% 0, calc(100% - var(--s)) 100%, 0 100%); }
+    .pg::before { content: ''; position: absolute; inset: 0; background: var(--fill, linear-gradient(90deg, #22163a, #1a122c));
+      clip-path: polygon(calc(var(--s) + 1.6px) 2px, calc(100% - 2px) 2px, calc(100% - var(--s) - 1.6px) calc(100% - 2px), 2px calc(100% - 2px)); }
+    .pg.win { --edge: var(--gold); --fill: linear-gradient(90deg, #3a2a3c 0%, #261a36 55%, #1c1430 100%); }
+    .pg .sh { position: absolute; inset: 0; opacity: 0; mix-blend-mode: screen; background: linear-gradient(110deg, transparent 35%, rgba(255,226,170,.35) 48%, transparent 60%); background-size: 300% 100%; }
+    .side { position: absolute; top: 0; height: 122px; display: flex; align-items: center; gap: 0; }
+    .side img { width: 80px; height: 80px; object-fit: contain; }
+    .side .bar { width: 2px; height: 62px; background: rgba(242,237,224,.35); margin: 0 40px; }
+    .side .nm { font-weight: 700; font-size: 46px; text-transform: uppercase; white-space: nowrap; letter-spacing: -0.005em; }
+    .side.r { flex-direction: row-reverse; }
+    .score { position: absolute; top: 0; height: 122px; display: flex; align-items: center; justify-content: center; gap: 22px; font-weight: 800; font-size: 82px; font-variant-numeric: tabular-nums; }
+    .score i { font-style: normal; font-size: 70px; color: var(--cream); }
+    .tag { position: absolute; top: -18px; height: 34px; width: 154px; display: flex; align-items: center; justify-content: center; background: var(--gold);
+      clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%); color: #1b1230; font-weight: 800; font-size: 22px; letter-spacing: 0.04em; }
+    .empty { left: 0; right: 0; top: 520px; text-align: center; font-weight: 700; font-size: 44px; color: var(--muted, #a69db6); text-transform: uppercase; letter-spacing: .06em; }
+  </style>
+</head>
+<body>
+<script type="module">
+  import { gsap, el, at, pic, days, fmtLongDay, wantedDay, teamLogo, isDecided } from './hud.js';
+  import { board } from './board.js';
+  await document.fonts.ready;
+
+  // день: ?day=20.11; иначе сегодня, а если сегодня ещё нет результатов — последний день с результатами
+  const all = await days();
+  const want = wantedDay();
+  const withRes = all.filter((d) => d.matches.some(isDecided));
+  const day = withRes.find((d) => d.id === want) || withRes.filter((d) => d.id <= want).pop() || withRes[withRes.length - 1];
+  const list = (day?.matches || []).filter(isDecided).slice(0, 4);
+
+  const B = board({ head: 'MATCH RESULTS', date: day ? fmtLongDay(day.matches[0].at) : '', dateLine: 400, dateLineAt: [436, 207], ruleY: 930 });
+  const C = B.content, tl = B.tl;
+  if (!list.length) at(el('div', 'empty', C, 'Results coming soon'), 0, 520);
+
+  const ys = list.length === 4 ? [290, 447, 603, 760] : list.length === 3 ? [330, 490, 650] : list.length === 2 ? [400, 570] : [480];
+  const nm = (t) => (t ? t.name : 'TBD');
+  list.forEach((m, i) => {
+    const r = at(el('div', 'rs', C), 0, ys[i]);
+    const aWin = m.score[0] > m.score[1];
+    const L = at(el('div', 'pg' + (aWin ? ' win' : ''), r), 130, 0, 705);
+    const M = at(el('div', 'pg', r), 795, 0, 320);
+    const R = at(el('div', 'pg' + (!aWin ? ' win' : ''), r), 1070, 0, 720);
+    [L, R].forEach((p) => el('i', 'sh', p));
+    const sa = at(el('div', 'side', r), 228, 0);
+    if (teamLogo(m.a)) pic(teamLogo(m.a), '', sa); el('i', 'bar', sa); el('div', 'nm', sa, nm(m.a));
+    const sb = el('div', 'side r', r); sb.style.right = (1920 - 1712) + 'px';
+    if (teamLogo(m.b)) pic(teamLogo(m.b), '', sb); el('i', 'bar', sb); el('div', 'nm', sb, nm(m.b));
+    [sa, sb].forEach((s) => { const n = s.querySelector('.nm'); if (n.textContent.length > 16) n.style.fontSize = '38px'; });
+    const sc = at(el('div', 'score', r, `<b>${m.score[0]}</b><i>:</i><b>${m.score[1]}</b>`), 795, 0, 320);
+    const tag = at(el('div', 'tag', r, 'WINNER'), aWin ? 585 : 1175, -18);
+
+    const d = 0.75 + i * 0.13;
+    tl.fromTo(L, { x: -80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: 'main' }, d)
+      .fromTo(R, { x: 80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: 'main' }, d)
+      .fromTo(M, { scaleY: 0 }, { scaleY: 1, duration: 0.6, ease: 'main' }, d + 0.15)
+      .fromTo([sa, sb], { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'main' }, d + 0.3)
+      .fromTo(sc.querySelectorAll('b'), { yPercent: 60, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.5, ease: 'back.out(2)', stagger: 0.08 }, d + 0.4)
+      .fromTo(tag, { y: -14, opacity: 0, scale: 1.3 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2)' }, d + 0.65);
+    // по плашке победителя иногда пробегает золотой блик
+    const wp = (aWin ? L : R).querySelector('.sh');
+    gsap.timeline({ delay: 3 + i * 0.35, repeat: -1, repeatDelay: 7 })
+      .fromTo(wp, { backgroundPosition: '100% 0', opacity: 1 }, { backgroundPosition: '-50% 0', duration: 1.4, ease: 'sine.inOut' })
+      .set(wp, { opacity: 0 });
+  });
+</script>
+</body>
+</html>

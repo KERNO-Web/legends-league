@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>LPL S5 · Starting soon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=block" rel="stylesheet" />
+  <style>
+    .cdwrap { width: 592px; height: 146px; }
+    .cd { width: 592px; height: 146px; --k: 26px; }
+    .cd .in { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+    .cd .who { display: flex; align-items: center; gap: 16px; font-weight: 700; font-size: 22px; letter-spacing: 0.06em; color: var(--gold); text-transform: uppercase; white-space: nowrap; }
+    .cd .who img { width: 34px; height: 34px; object-fit: contain; }
+    .cd .who b { color: var(--cream); font-weight: 700; }
+    .cd .clock { font-weight: 800; font-size: 64px; line-height: 1; letter-spacing: 0.02em; color: var(--cream); font-variant-numeric: tabular-nums; }
+    .cd .clock i { font-style: normal; color: var(--gold); padding: 0 2px; }
+    .cd .clock.small { font-size: 46px; letter-spacing: 0.04em; }
+  </style>
+</head>
+<body>
+<script type="module">
+  import { sideScene } from './side.js';
+  import { gsap, el, at, q, now, days, fmtTime, teamLogo, isDecided } from './hud.js';
+  await document.fonts.ready;
+
+  let panel;
+  const { tl } = sideScene({
+    art: 'starting',
+    video: 'img/starting-loop.mp4', // если положить сюда зацикленное видео из Kling — оно заменит картинку
+    lines: ['STARTING', 'SOON'], titleY: 260, size: 179, pitch: 148,
+    sub: 'NEXT BROADCAST', subY: 600,
+    line: [190, 612, 437],
+    hue: 24,
+    flares: [[1468, 62, 1.15], [1873, 160, 0.5], [1215, 452, 0.5], [1760, 345, 0.45], [960, 540, 0.4]], flareEvery: 6,
+    motes: [34, [820, 200, 1100, 760]],
+    extra(S, fx) {
+      // портал дышит светом изнутри арены
+      const g = at(el('div', 'glow', fx), 1180, 330, 520, 420);
+      gsap.fromTo(g, { opacity: 0.2, scale: 0.95 }, { opacity: 0.55, scale: 1.05, duration: 2.8, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+    },
+    after(S) {
+      const wrap = at(el('div', 'cdwrap', S), 75, 687);
+      panel = el('div', 'chamfer cd', wrap); panel.style.left = '0'; panel.style.top = '0';
+      panel.innerHTML = '<div class="in"><div class="who"></div><div class="clock num">--<i>:</i>--</div></div>';
+    },
+  });
+  // панель появляется после заголовка: кант прорисовывается, цифры проявляются
+  tl.fromTo(panel.parentElement, { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: 0.9, ease: 'main' }, 1.15)
+    .fromTo(panel.querySelector('.in'), { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.6, ease: 'main' }, 1.6);
+
+  // отсчёт до ближайшего матча из таблицы; ?to=18:30 — вручную (CET); ?match=0 — без строки с командами
+  const who = panel.querySelector('.who'), clock = panel.querySelector('.clock');
+  let target = null;
+  function fromQuery() {
+    const m = (q('to') || '').match(/(\d{1,2}):(\d{2})/); if (!m) return null;
+    const d = new Date(now()); const cet = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+    const diff = d - cet; cet.setHours(+m[1], +m[2], 0, 0);
+    let t = cet.getTime() + diff; if (t < now()) t += 864e5; return t;
+  }
+  async function load() {
+    target = fromQuery();
+    if (target) { who.textContent = `Broadcast · ${q('to')} CET`; return; }
+    const all = (await days()).flatMap((d) => d.matches).filter((m) => !isDecided(m) && m.at > now() - 6e4).sort((a, b) => a.at - b.at);
+    const n = all[0];
+    if (!n) { who.textContent = 'Stay tuned'; target = null; return; }
+    target = +n.at;
+    const side = (t) => `${teamLogo(t) ? `<img src="${teamLogo(t)}" alt="">` : ''}<b>${t ? t.name : 'TBD'}</b>`;
+    who.innerHTML = q('match') === '0' ? `Today · ${fmtTime(n.at)} CET` : `${side(n.a)}<span>vs</span>${side(n.b)}`;
+  }
+  const pad = (v) => String(v).padStart(2, '0');
+  function tick() {
+    if (!target) { clock.innerHTML = 'SOON'; clock.classList.add('small'); return; }
+    const s = Math.max(0, Math.round((target - now()) / 1000));
+    clock.classList.toggle('small', s === 0);
+    if (s === 0) { clock.innerHTML = 'GOING LIVE'; return; }
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+    clock.innerHTML = (h ? `${pad(h)}<i>:</i>` : '') + `${pad(m)}<i>:</i>${pad(x)}`;
+  }
+  await load(); tick();
+  setInterval(tick, 1000);
+  setInterval(load, 120000);
+</script>
+</body>
+</html>
