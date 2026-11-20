@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LPL S5 · Be Right Back</title>
+<!--
+  Заставка «Be Right Back» для эфира, 1920×1080, бесшовная петля 12 с.
+  OBS: Источник → Браузер → «Локальный файл» → этот файл, ширина 1920, высота 1080.
+  Картинка лежит рядом (bg.webp + две маски), папку держать целиком.
+  Движение как на сайте: один фронт света по кристаллу, перелив, holo-волна по спонсорам; всё спокойно.
+-->
+<style>
+  html, body { margin: 0; height: 100%; background: #160f26; overflow: hidden; }
+  .stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; background: #160f26; }
+  .stage > * { position: absolute; pointer-events: none; }
+  .bg { inset: 0; width: 1920px; height: 1080px; }
+
+  /* слой, который видно только на светлых гранях арта */
+  .lit { inset: 0; -webkit-mask: url(mask-light.png) 0 0 / 1920px 1080px no-repeat; mask: url(mask-light.png) 0 0 / 1920px 1080px no-repeat; }
+  .logo-lit { inset: 0; -webkit-mask: url(mask-logo.png) 0 0 / 1920px 1080px no-repeat; mask: url(mask-logo.png) 0 0 / 1920px 1080px no-repeat; }
+
+  /* перелив кристалла: копия арта со сдвигом оттенка, только в зоне кристалла */
+  .shimmer { inset: 0; background: url(bg.webp) 0 0 / 1920px 1080px; clip-path: polygon(840px 70px, 1890px 70px, 1890px 900px, 840px 900px); }
+
+  /* фронт света */
+  .sweep { inset: 0; mix-blend-mode: screen; }
+  .sweep i { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px;
+    background: linear-gradient(115deg, transparent 0 44%, rgba(255,255,255,.0) 45%, rgba(255,235,255,.55) 48.5%, rgba(255,225,168,.85) 50%, rgba(180,124,255,.55) 51.5%, transparent 55% 100%);
+    background-size: 300% 100%; }
+  .bloom { left: 1020px; top: 120px; width: 620px; height: 620px; border-radius: 50%; mix-blend-mode: screen;
+    background: radial-gradient(closest-side, rgba(190,120,255,.55), rgba(140,70,230,.18) 55%, transparent); filter: blur(10px); }
+
+  /* искры-звёзды */
+  .flare { width: 0; height: 0; mix-blend-mode: screen; }
+  .flare b, .flare s, .flare u { position: absolute; left: 0; top: 0; display: block; }
+  .flare b { width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,250,235,1), rgba(255,200,140,.55) 25%, rgba(255,160,230,.15) 60%, transparent); }
+  .flare s { width: 260px; height: 3px; margin: -1.5px 0 0 -130px; background: linear-gradient(90deg, transparent, rgba(255,240,220,.95), transparent); }
+  .flare u { width: 3px; height: 200px; margin: -100px 0 0 -1.5px; background: linear-gradient(180deg, transparent, rgba(255,240,220,.9), transparent); }
+
+  /* золотая линия под подзаголовком */
+  .line-glint { left: 0; top: 0; width: 220px; height: 60px; margin: -30px 0 0 -110px; mix-blend-mode: screen;
+    background: radial-gradient(closest-side, #fff, rgba(255,226,170,.9) 30%, rgba(255,190,120,.3) 60%, transparent); }
+
+  /* holo-волна по спонсорам — как по логотипам команд на сайте */
+  .holo i { position: absolute; left: 0; top: 940px; width: 1920px; height: 120px;
+    background: linear-gradient(115deg, transparent 0 43%, rgba(255,139,216,.9) 46%, #ffe1a8 47.8%, #8bffd9 49.3%, #7ad8ff 50.8%, #b47cff 52.3%, transparent 55% 100%);
+    background-size: 300% 100%; }
+
+  /* блик по ободу подиума */
+  .rim { left: 0; top: 0; width: 240px; height: 34px; margin: -17px 0 0 -120px; mix-blend-mode: screen;
+    background: radial-gradient(closest-side, rgba(255,236,200,1), rgba(255,190,120,.45) 45%, transparent); }
+
+  /* пылинки */
+  .mote { left: 0; top: 0; border-radius: 50%; mix-blend-mode: screen; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <img class="bg" src="bg.webp" alt="">
+  <div class="lit"><div class="shimmer" id="shimmer"></div></div>
+  <div class="bloom" id="bloom"></div>
+  <div class="lit sweep"><i id="sweep"></i></div>
+  <div class="lit"><div class="line-glint" id="lineGlint"></div><div class="rim" id="rim"></div></div>
+  <div class="logo-lit holo" id="holoWrap"><i id="holo"></i></div>
+  <div id="flares"></div>
+  <div id="motes"></div>
+</div>
+<script>
+// Всё — функция от времени t (0..L): одинаково в живом режиме и при рендере видео, петля сходится сама.
+const L = 12;
+const $ = (id) => document.getElementById(id);
+const ease = (x) => { // кривая сайта cubic-bezier(.16,1,.3,1), приближение
+  x = Math.min(1, Math.max(0, x)); return 1 - Math.pow(1 - x, 4);
+};
+const glide = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); }; // плавный проход
+const win =(t, a, b) => Math.min(1, Math.max(0, (t - a) / (b - a)));
+const bump = (p) => Math.sin(Math.PI * Math.min(1, Math.max(0, p))); // 0→1→0
+const TAU = Math.PI * 2;
+// детерминированный «случай»
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+// искры: [x, y, масштаб, фаза вспышки 0..1]
+const FLARES = [[1100, 167, 1, 0.08], [1660, 443, 0.9, 0.55], [1305, 551, 0.45, 0.32], [1442, 283, 0.4, 0.8], [918, 834, 0.35, 0.68]];
+const flareEls = FLARES.map(([x, y]) => {
+  const d = document.createElement('div'); d.className = 'flare';
+  d.innerHTML = '<b></b><s></s><u></u>'; d.style.left = x + 'px'; d.style.top = y + 'px';
+  $('flares').appendChild(d); return d;
+});
+
+// пылинки поднимаются в правой половине; k оборотов за петлю — стык без скачка
+const MOTES = Array.from({ length: 22 }, () => ({
+  x: 860 + rnd() * 1000, y0: 780 + rnd() * 260, rise: 320 + rnd() * 360,
+  k: rnd() < 0.5 ? 1 : 2, ph: rnd(), r: 1.2 + rnd() * 2.2, sway: 6 + rnd() * 14,
+  c: rnd() < 0.6 ? '255,214,250' : '255,214,160', a: 0.35 + rnd() * 0.5,
+}));
+const moteEls = MOTES.map((m) => {
+  const d = document.createElement('div'); d.className = 'mote';
+  d.style.width = d.style.height = m.r * 2 + 'px';
+  d.style.background = `radial-gradient(closest-side, rgba(${m.c},1), rgba(${m.c},0))`;
+  d.style.boxShadow = `0 0 ${m.r * 4}px rgba(${m.c},.6)`;
+  $('motes').appendChild(d); return d;
+});
+
+function render(t) {
+  t = ((t % L) + L) % L;
+  const s = t / L;
+
+  // перелив: оттенок кристалла плавает ±24°, круг за петлю
+  const h = 24 * Math.sin(TAU * s);
+  const sh = $('shimmer');
+  sh.style.filter = `hue-rotate(${h.toFixed(2)}deg) saturate(1.12) brightness(1.05)`;
+  sh.style.opacity = (0.55 + 0.15 * Math.sin(TAU * s + 1.3)).toFixed(3);
+
+  // дыхание свечения за треугольником
+  $('bloom').style.opacity = (0.22 + 0.12 * (0.5 + 0.5 * Math.sin(TAU * s - 1.2))).toFixed(3);
+
+  // фронт света: 1.0–3.6 с, линейно, слева-сверху вправо-вниз
+  const p = win(t, 1.0, 3.6);
+  // центр полосы — 50% градиента шириной 5760px; ведём его по x от 650 до 2150
+  $('sweep').style.backgroundPosition = `${(650 + p * 1500 - 2880).toFixed(1)}px 0`;
+  $('sweep').style.opacity = p > 0 && p < 1 ? 1 : 0;
+
+  // искры: ровное мерцание + вспышка раз в петлю, звезда чуть поворачивается
+  FLARES.forEach(([, , k, ph], i) => {
+    let d = s - ph; d -= Math.round(d); // -0.5..0.5 по кругу
+    const flash = Math.exp(-(d * d) / 0.0016);
+    const idle = 0.28 + 0.1 * Math.sin(TAU * (s * 3 + i * 0.37));
+    const o = idle + 0.72 * flash;
+    const sc = k * (0.55 + 0.6 * flash + 0.06 * Math.sin(TAU * (s * 2 + i * 0.2)));
+    flareEls[i].style.opacity = o.toFixed(3);
+    flareEls[i].style.transform = `rotate(${(12 * Math.sin(TAU * s + i)).toFixed(2)}deg) scale(${sc.toFixed(3)})`;
+  });
+
+  // блик бежит по золотой линии: 5.0–6.3 с
+  const lp = win(t, 5.0, 6.3);
+  const lg = $('lineGlint');
+  lg.style.transform = `translate(${(70 + glide(lp) * 600).toFixed(1)}px, 743px)`;
+  lg.style.opacity = bump(lp).toFixed(3);
+
+  // holo-волна по спонсорам: 7.4–8.8 с
+  const hp = win(t, 7.4, 8.8);
+  $('holo').style.backgroundPosition = `${(1080 + glide(hp) * 900 - 2880).toFixed(1)}px 0`;
+  $('holoWrap').style.opacity = bump(hp).toFixed(3);
+
+  // блик обходит обод подиума за петлю, ярче спереди
+  const a = TAU * s + Math.PI / 2;
+  const rx = 470, ry = 34, cx = 1265, cy = 812;
+  const rim = $('rim');
+  rim.style.transform = `translate(${(cx + rx * Math.cos(a)).toFixed(1)}px, ${(cy + ry * Math.sin(a)).toFixed(1)}px)`;
+  rim.style.opacity = (0.15 + 0.75 * Math.max(0, Math.sin(a))).toFixed(3);
+
+  // пылинки
+  MOTES.forEach((m, i) => {
+    const q = ((s * m.k + m.ph) % 1);
+    const x = m.x + m.sway * Math.sin(TAU * (q * 1 + m.ph));
+    const y = m.y0 - q * m.rise;
+    moteEls[i].style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+    moteEls[i].style.opacity = (m.a * bump(q)).toFixed(3);
+  });
+}
+
+// подгон под окно (в OBS при 1920×1080 масштаб 1)
+function fit() {
+  const k = Math.min(innerWidth / 1920, innerHeight / 1080);
+  const st = $('stage');
+  st.style.transform = `translate(${(innerWidth - 1920 * k) / 2}px, ${(innerHeight - 1080 * k) / 2}px) scale(${k})`;
+}
+addEventListener('resize', fit); fit();
+
+window.seek = render; // для рендера видео
+if (!location.search.includes('render')) {
+  const t0 = performance.now();
+  const loop = (now) => { render((now - t0) / 1000); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+} else render(0);
+</script>
+</body>
+</html>
