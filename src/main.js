@@ -223,7 +223,23 @@ function renderDays() {
   if (!DAYS.some((d) => d.id === state.day)) state.day = pickDay();
   daysEl.innerHTML = DAYS.map((d) => `<button class="chip${d.id === state.day ? ' is-on' : ''}" role="tab" aria-selected="${d.id === state.day}" data-day="${d.id}"><span>${d.label}</span></button>`).join('') + '<span class="seg__ink" aria-hidden="true"></span>';
   placeInk(daysEl, true);
+  revealDay(true);
 }
+// много игровых дней: ряд прокручивается, выбранный день держим в зоне видимости
+function daysCut() {
+  const max = daysEl.scrollWidth - daysEl.clientWidth;
+  daysEl.classList.toggle('is-cut-l', daysEl.scrollLeft > 2);
+  daysEl.classList.toggle('is-cut-r', daysEl.scrollLeft < max - 2);
+}
+function revealDay(instant) {
+  const on = $('.chip.is-on', daysEl);
+  if (on && daysEl.scrollWidth > daysEl.clientWidth) {
+    const left = on.offsetLeft - (daysEl.clientWidth - on.offsetWidth) / 2;
+    daysEl.scrollTo({ left: Math.max(0, left), behavior: instant ? 'instant' : 'smooth' });
+  }
+  daysCut();
+}
+daysEl.addEventListener('scroll', daysCut, { passive: true });
 
 function select(seg, btn) {
   $$('.chip', seg).forEach((c) => { c.classList.toggle('is-on', c === btn); c.setAttribute('aria-selected', c === btn); });
@@ -239,7 +255,9 @@ $('[data-seg="tab"]').addEventListener('click', (e) => {
 daysEl.addEventListener('click', (e) => {
   const b = e.target.closest('.chip'); if (!b || b.classList.contains('is-on')) return;
   select(daysEl, b);
+  revealDay();
   state.day = b.dataset.day;
+  state.dayPicked = true;
   if (state.tab !== 'upcoming') {
     const up = $('[data-tab="upcoming"]');
     select(up.parentElement, up); state.tab = 'upcoming'; daysEl.classList.remove('is-dim');
@@ -267,7 +285,7 @@ addEventListener('click', (e) => { if (!e.target.closest('.tz')) tzToggle(false)
 state.day = pickDay();
 renderDays();
 renderRows(false);
-const inks = () => { placeInk($('[data-seg="tab"]'), true); placeInk(daysEl, true); };
+const inks = () => { placeInk($('[data-seg="tab"]'), true); placeInk(daysEl, true); revealDay(true); };
 requestAnimationFrame(inks);
 document.fonts?.ready.then(inks);
 addEventListener('resize', inks);
@@ -284,6 +302,8 @@ async function refresh() {
   if (s === lastSig) return;
   const first = !lastSig;
   lastSig = s;
+  // пока посетитель сам не выбрал день — показываем актуальный по свежим данным (в снимке новых дней может не быть)
+  if (!state.dayPicked) state.day = pickDay();
   renderDays();
   renderRows(!first && !reduced);
 }

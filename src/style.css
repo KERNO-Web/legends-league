@@ -159,7 +159,12 @@ ul, ol { list-style: none; }
   background: linear-gradient(180deg, #c58dff, #8c4ae0); transition: transform 0.6s var(--ease), width 0.6s var(--ease); }
 .seg__ink::before { content: ''; position: absolute; inset: 1px; background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0 16%, transparent 16%), linear-gradient(180deg, #8a3be6, var(--violet-2)); }
 .chip span { position: relative; z-index: 2; }
-.seg--days { gap: 0.6rem; transition: opacity 0.3s; }
+.seg--days { gap: 0.6rem; transition: opacity 0.3s; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; scroll-behavior: smooth; }
+.seg--days::-webkit-scrollbar { display: none; }
+.seg--days .chip { flex-shrink: 0; }
+.seg--days.is-cut-r { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 4rem), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 4rem), transparent); }
+.seg--days.is-cut-l { -webkit-mask-image: linear-gradient(90deg, transparent, #000 4rem); mask-image: linear-gradient(90deg, transparent, #000 4rem); }
+.seg--days.is-cut-l.is-cut-r { -webkit-mask-image: linear-gradient(90deg, transparent, #000 4rem calc(100% - 4rem), transparent); mask-image: linear-gradient(90deg, transparent, #000 4rem calc(100% - 4rem), transparent); }
 .seg--days.is-dim { opacity: 0.35; }
 .seg--days .chip { min-width: 10.6rem; padding: 0 1.5rem; height: 3.85rem; }
 .seg--days .seg__ink { height: 3.85rem; }
