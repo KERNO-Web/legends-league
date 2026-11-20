@@ -411,4 +411,6 @@ ul, ol { list-style: none; }
 /* сыгранный матч: счёт вместо времени */
 .time .score { display: inline-flex; align-items: center; gap: 0.5rem; font-variant-numeric: tabular-nums; }
 .time .score i { font-style: normal; color: var(--gold); }
+.time .score--live { margin-left: 1.2rem; font-size: 1.5rem; opacity: 0.85; }
+@media (max-width: 600px) { .time .score--live { margin-left: 0; font-size: 14px; } .time:has(.score--live) { flex-direction: column; gap: 2px; } }
 .match.has-score { opacity: 0.85; }

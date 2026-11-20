@@ -54,7 +54,18 @@ function parseScore(s) {
   return m ? [+m[1], +m[2]] : null;
 }
 
-const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+// Формат серии по колонке «Match type»: плей-офф и финалы — BO5, остальное (Swiss) — BO3.
+// Явное «BO3»/«BO5» в ячейке важнее.
+export function seriesBo(type) {
+  const t = String(type || '').toLowerCase();
+  const m = t.match(/bo\s*([1-9])/);
+  if (m) return +m[1];
+  return /play\s*-?\s*off|final/.test(t) ? 5 : 3;
+}
+// серия доиграна: у кого-то нужное число побед (BO3 — 2, BO5 — 3)
+export const isDecided = (m) => !!m.score && Math.max(...m.score) >= Math.ceil(m.bo / 2);
+
+const MONTHS =['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 export function buildDays(csv) {
   const rows = parseCSV(csv);
@@ -74,6 +85,7 @@ export function buildDays(csv) {
       a: team(r[iA]), b: team(r[iB]), at,
       score: parseScore(r[iS]),
       type: (r[iType] || '').trim(),
+      bo: seriesBo(r[iType]),
     });
   }
   return [...byDay.values()].sort((x, y) => x.id.localeCompare(y.id)).map((d) => ({ ...d, matches: d.matches.sort((x, y) => x.at - y.at) }));

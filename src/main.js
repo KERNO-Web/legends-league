@@ -4,7 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CustomEase } from 'gsap/CustomEase';
 import { initCrystal } from './fx/crystal.js';
 import { TEAMS, ZONES, TWITCH_URL, RULES_URL, SEASON_START, MATCH_MINUTES } from './data.js';
-import { snapshotDays, loadDays } from './schedule.js';
+import { snapshotDays, loadDays, isDecided } from './schedule.js';
 
 // «Сейчас»: можно подменить для показа/проверки — ?now=2026-11-20T10:30:00Z
 const NOW_SHIFT = (() => { try { const v = new URLSearchParams(location.search).get('now'); const t = v && Date.parse(v); return t ? t - Date.now() : 0; } catch { return 0; } })();
@@ -159,7 +159,7 @@ function sideHTML(t, cls) {
   return `<div class="side ${cls}">${logo}<span title="${esc(t.name)}">${esc(t.name)}</span></div>`;
 }
 function matchState(m, t) {
-  if (m.score) return 'done';
+  if (isDecided(m)) return 'done';
   const start = m.at.getTime();
   if (t < start) return 'upcoming';
   return t < start + MATCH_MINUTES * 60000 ? 'live' : 'done';
@@ -169,8 +169,9 @@ function rowHTML(m, dayLabel, t) {
   const names = `${m.a ? m.a.name : 'TBD'} vs ${m.b ? m.b.name : 'TBD'}`;
   const sides = `${sideHTML(m.a, 'side--a')}<span class="vs">VS</span>${sideHTML(m.b, 'side--b')}`;
   // идёт сейчас: вся строка — ссылка на трансляцию
-  if (st === 'live') return `<a class="match shape is-live" href="${TWITCH_URL}" target="_blank" rel="noopener" aria-label="${esc(names)}, live now, watch on Twitch">
-    ${sides}<span class="time"><span class="live-badge"><i aria-hidden="true"></i>LIVE</span></span></a>`;
+  // промежуточный счёт серии (1:0, 1:1) показываем рядом с LIVE
+  if (st === 'live') return `<a class="match shape is-live" href="${TWITCH_URL}" target="_blank" rel="noopener" aria-label="${esc(names)}, live now${m.score ? ', ' + m.score.join(':') : ''}, watch on Twitch">
+    ${sides}<span class="time"><span class="live-badge"><i aria-hidden="true"></i>LIVE</span>${m.score ? `<span class="score score--live">${m.score[0]}<i>:</i>${m.score[1]}</span>` : ''}</span></a>`;
   // сыгран: вместо времени счёт
   if (m.score) return `<article class="match shape is-done has-score" aria-label="${esc(names)}, ${m.score.join(':')}">
     ${sides}<span class="time"><span class="score">${m.score[0]}<i>:</i>${m.score[1]}</span></span></article>`;
@@ -181,7 +182,7 @@ function rowHTML(m, dayLabel, t) {
 function rowsHTML() {
   const t = now();
   if (state.tab === 'results') {
-    const done = DAYS.flatMap((d) => d.matches).filter((m) => m.score).sort((x, y) => y.at - x.at);
+    const done = DAYS.flatMap((d) => d.matches).filter(isDecided).sort((x, y) => y.at - x.at);
     if (!done.length) return `<div class="empty shape"><strong>No results yet</strong><p>Scores appear here as soon as the first series are played.</p></div>`;
     return done.map((m) => rowHTML(m, null, t)).join('');
   }

@@ -2,8 +2,9 @@
 
 export const TWITCH_URL = 'https://www.twitch.tv/';
 export const RULES_URL = '#';
-// Сколько считаем матч идущим после начала (примерно BO3), минут
-export const MATCH_MINUTES = 150;
+// Матч LIVE с времени начала, пока в Score нет победного счёта (BO3 — 2 победы, BO5 — 3).
+// Страховка, если счёт забыли вписать: позже стольких минут после начала LIVE не горит.
+export const MATCH_MINUTES = 8 * 60;
 export const SEASON_START = '2026-11-20T10:00:00Z'; // первый матч: 20 NOV 11:00 CET
 
 export const TEAMS = [
