@@ -231,6 +231,9 @@ export function inArt(tl, wrap, pos = 0) {
 }
 
 // повторить вход, когда OBS снова показывает сцену (без перезагрузки источника)
+// для рендера видео: остановить живое время и выставлять кадры вручную
+window.__hud = { seek: (t) => { gsap.globalTimeline.pause(); gsap.globalTimeline.time(t, false); }, now: () => gsap.globalTimeline.time() };
+
 export function replayOnShow(tl) {
   // ?t=0.8 — заморозить вход на этой секунде (для проверки кадров)
   if (P.has('t')) { const t = +P.get('t'); gsap.globalTimeline.getChildren(true, false, true).forEach((x) => x.pause()); tl.seek(t).pause(); return; }
@@ -239,7 +242,8 @@ export function replayOnShow(tl) {
 }
 
 // ---------- данные из таблицы ----------
-export const teamLogo = (t) => (t?.logo ? '../' + t.logo : null);
+// логотип: путь из списка команд сайта (img/teams/...) или полный адрес (http..., /..., data:) из своего источника
+export const teamLogo = (t) => (!t?.logo ? null : /^(https?:|\/|data:)/.test(t.logo) ? t.logo : '../' + t.logo);
 export const BY_SLUG = Object.fromEntries(TEAMS.map((t) => [t.slug, t]));
 // живые данные из таблицы; если Google не ответил за 5 с — сохранённый снимок, чтобы экран не стоял пустым
 export async function days() {
