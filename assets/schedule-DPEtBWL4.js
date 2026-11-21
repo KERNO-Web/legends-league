@@ -4,17 +4,17 @@
 ,Swiss-stage,20.11,17 CET,BUBLIKI,0-2,ZENA,5,25,10,22,,,26:08,28:10,\r
 ,Swiss-stage,20.11,20:30 CET,regnum4games,2-1,FRANCESINHAS,25,1,17,32,27,16,23:16,33:57,40:19\r
 ,Swiss-stage,21.11,11 CET,Bomba Team,FF-W,WLG,,,,,,,,,\r
-,Swiss-stage,21.11,14 CET,Power Rangers,,Arctic Pandas,,,,,,,,,\r
-,Swiss-stage,21.11,16:30 CET,Cult of Wildenbruch,,Sawadika,,,,,,,,,\r
+,Swiss-stage,21.11,14 CET,Power Rangers,0-2,Arctic Pandas,11,27,17,32,,,22:54,27:36,\r
+,Swiss-stage,21.11,16:30 CET,Cult of Wildenbruch,FF-W,Sawadika,,,,,,,,,\r
 ,Swiss-stage,21.11,20 CET,VfB eSports,,Dominion Goblins,,,,,,,,,\r
-,Swiss-stage,,11 CET,,,,,,,,,,,,\r
-,Swiss-stage,,14 CET,,,,,,,,,,,,\r
-,Swiss-stage,,17 CET,,,,,,,,,,,,\r
-,Swiss-stage,,20 CET,,,,,,,,,,,,\r
-,Swiss-stage,,11 CET,,,,,,,,,,,,\r
-,Swiss-stage,,14 CET,,,,,,,,,,,,\r
-,Swiss-stage,,17 CET,,,,,,,,,,,,\r
-,Swiss-stage,,20 CET,,,,,,,,,,,,\r
+,Swiss-stage,22.11,11 CET,Forsaken,,Power Rangers,,,,,,,,,\r
+,Swiss-stage,22.11,14 CET,ZENA,,WLG,,,,,,,,,\r
+,Swiss-stage,22.11,17 CET,Valerion,,Arctic Pandas,,,,,,,,,\r
+,Swiss-stage,22.11,20:30 CET,DOCISK,,FRANCESINHAS,,,,,,,,,\r
+,Swiss-stage,23.11,11 CET,Loser: VfB eSports/Dominion Goblins,,Bomba Team,,,,,,,,,\r
+,Swiss-stage,23.11,14 CET,Colossal Gaming,,Sawadika,,,,,,,,,\r
+,Swiss-stage,23.11,17 CET,BUBLIKI,,Cult of Wildenbruch,,,,,,,,,\r
+,Swiss-stage,23.11,20 CET,regnum4games,,Winner: VfB eSports/Dominion Goblins,,,,,,,,,\r
 ,Swiss-stage,,11 CET,,,,,,,,,,,,\r
 ,Swiss-stage,,14 CET,,,,,,,,,,,,\r
 ,Swiss-stage,,17 CET,,,,,,,,,,,,\r
