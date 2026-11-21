@@ -64,6 +64,21 @@ function parseScore(s) {
   const sc = [+m[1], +m[2]];
   return sc[0] <= 5 && sc[1] <= 5 ? sc : null;
 }
+// Техническое поражение: «W:FF» — первая команда победила, вторая не явилась; «FF:W» — наоборот;
+// «FF:FF» — не явились обе. Подходят и «+:-», «TL», разделитель «:», «-», «/» или пробел.
+// Возвращает, кто получил техпоражение: 'a', 'b' или 'both'.
+function parseForfeit(s) {
+  const m = String(s || '').trim().toUpperCase().match(/^(W|WIN|FF|TL|\+|-)\s*[:\/–\s-]\s*(W|WIN|FF|TL|\+|-)$/);
+  if (!m) return null;
+  const lost = (t) => t === 'FF' || t === 'TL' || t === '-';
+  const a = lost(m[1]), b = lost(m[2]);
+  return a && b ? 'both' : a ? 'a' : b ? 'b' : null;
+}
+// счёт для показа: обычный — цифры; техпоражение — W у победителя, FF у не явившегося
+export const scoreText = (m) => (m.forfeit ? [m.forfeit === 'b' ? 'W' : 'FF', m.forfeit === 'a' ? 'W' : 'FF'] : m.score ? m.score.map(String) : null);
+// кто выиграл серию: 'a', 'b' или null (ещё нет, ничья, обе не явились)
+export const winnerOf = (m) => (m.forfeit ? (m.forfeit === 'a' ? 'b' : m.forfeit === 'b' ? 'a' : null) : m.score && m.score[0] !== m.score[1] ? (m.score[0] > m.score[1] ? 'a' : 'b') : null);
+
 // «20.11», «20/11», «20.11.2026», «Fri 21.11» → [день, месяц]
 function parseDate(s) {
   const m = String(s || '').match(/(\d{1,2})[./](\d{1,2})(?:[./]\d{2,4})?/);
@@ -81,7 +96,7 @@ export function seriesBo(type) {
   return /play\s*-?\s*off|final|bracket|upper|lower|semi|quarter|grand|decider/.test(t) ? 5 : 3;
 }
 // серия доиграна: у кого-то нужное число побед (BO3 — 2, BO5 — 3)
-export const isDecided = (m) => !!m.score && Math.max(...m.score) >= Math.ceil(m.bo / 2);
+export const isDecided = (m) => !!m.forfeit || (!!m.score && Math.max(...m.score) >= Math.ceil(m.bo / 2));
 
 const MONTHS =['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
@@ -106,6 +121,7 @@ export function buildDays(csv) {
     byDay.get(id).matches.push({
       a: team(r[iA]), b: team(r[iB]), at,
       score: parseScore(r[iS]),
+      forfeit: parseForfeit(r[iS]),
       type: (r[iType] || '').trim(),
       bo: seriesBo(r[iType]),
     });

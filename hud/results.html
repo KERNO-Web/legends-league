@@ -25,12 +25,14 @@
     .score i { font-style: normal; font-size: 70px; color: var(--cream); }
     .tag { position: absolute; top: -18px; height: 34px; width: 154px; display: flex; align-items: center; justify-content: center; background: var(--gold);
       clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%); color: #1b1230; font-weight: 800; font-size: 22px; letter-spacing: 0.04em; }
+    .score.ff { font-size: 64px; gap: 18px; } .score.ff i { font-size: 54px; }
+    .fftag { position: absolute; height: 20px; text-align: center; font-weight: 700; font-size: 15px; letter-spacing: .18em; color: var(--gold); }
     .empty { left: 0; right: 0; top: 520px; text-align: center; font-weight: 700; font-size: 44px; color: var(--muted, #a69db6); text-transform: uppercase; letter-spacing: .06em; }
   </style>
 </head>
 <body>
 <script type="module">
-  import { gsap, el, at, pic, days, fmtLongDay, wantedDay, teamLogo, isDecided } from './hud.js';
+  import { gsap, el, at, pic, days, fmtLongDay, wantedDay, teamLogo, isDecided, scoreText, winnerOf } from './hud.js';
   import { board } from './board.js';
   await document.fonts.ready;
 
@@ -49,18 +51,20 @@
   const nm = (t) => (t ? t.name : 'TBD');
   list.forEach((m, i) => {
     const r = at(el('div', 'rs', C), 0, ys[i]);
-    const aWin = m.score[0] > m.score[1];
-    const L = at(el('div', 'pg' + (aWin ? ' win' : ''), r), 130, 0, 705);
+    const win = winnerOf(m), aWin = win === 'a', sc0 = scoreText(m);
+    const L = at(el('div', 'pg' + (win === 'a' ? ' win' : ''), r), 130, 0, 705);
     const M = at(el('div', 'pg', r), 795, 0, 320);
-    const R = at(el('div', 'pg' + (!aWin ? ' win' : ''), r), 1070, 0, 720);
+    const R = at(el('div', 'pg' + (win === 'b' ? ' win' : ''), r), 1070, 0, 720);
     [L, R].forEach((p) => el('i', 'sh', p));
     const sa = at(el('div', 'side', r), 228, 0);
     if (teamLogo(m.a)) pic(teamLogo(m.a), '', sa); el('i', 'bar', sa); el('div', 'nm', sa, nm(m.a));
     const sb = el('div', 'side r', r); sb.style.right = (1920 - 1712) + 'px';
     if (teamLogo(m.b)) pic(teamLogo(m.b), '', sb); el('i', 'bar', sb); el('div', 'nm', sb, nm(m.b));
     [sa, sb].forEach((s) => { const n = s.querySelector('.nm'); if (n.textContent.length > 16) n.style.fontSize = '38px'; });
-    const sc = at(el('div', 'score', r, `<b>${m.score[0]}</b><i>:</i><b>${m.score[1]}</b>`), 795, 0, 320);
+    const sc = at(el('div', 'score' + (m.forfeit ? ' ff' : ''), r, `<b>${sc0[0]}</b><i>:</i><b>${sc0[1]}</b>`), 795, 0, 320);
+    if (m.forfeit) at(el('div', 'fftag', r, 'FORFEIT'), 795, 92, 320);
     const tag = at(el('div', 'tag', r, 'WINNER'), aWin ? 585 : 1175, -18);
+    if (!win) tag.style.display = 'none';
 
     const d = 0.75 + i * 0.13;
     tl.fromTo(L, { x: -80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: 'main' }, d)
@@ -70,7 +74,7 @@
       .fromTo(sc.querySelectorAll('b'), { yPercent: 60, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.5, ease: 'back.out(2)', stagger: 0.08 }, d + 0.4)
       .fromTo(tag, { y: -14, opacity: 0, scale: 1.3 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2)' }, d + 0.65);
     // по плашке победителя иногда пробегает золотой блик
-    const wp = (aWin ? L : R).querySelector('.sh');
+    const wp = (aWin ? L : R).querySelector('.sh'); if (!win) return;
     gsap.timeline({ delay: 3 + i * 0.35, repeat: -1, repeatDelay: 7 })
       .fromTo(wp, { backgroundPosition: '100% 0', opacity: 1 }, { backgroundPosition: '-50% 0', duration: 1.4, ease: 'sine.inOut' })
       .set(wp, { opacity: 0 });

@@ -5,7 +5,7 @@ import gsap from 'gsap';
 import { CustomEase } from 'gsap/CustomEase';
 import './hud.css';
 import { TEAMS } from '../src/data.js';
-import { loadDays, snapshotDays, isDecided } from '../src/schedule.js';
+import { loadDays, snapshotDays, isDecided, scoreText, winnerOf } from '../src/schedule.js';
 
 gsap.registerPlugin(CustomEase);
 CustomEase.create('main', '.16,1,.3,1');
@@ -269,7 +269,7 @@ export async function days() {
   const slow = new Promise((r) => setTimeout(() => r(null), 5000));
   try { return (await Promise.race([loadDays(), slow])) || snapshotDays(); } catch { return snapshotDays(); }
 }
-export { isDecided };
+export { isDecided, scoreText, winnerOf };
 const CET = 'Europe/Berlin';
 export const fmtTime = (d) => new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: CET }).format(d);
 export const fmtLongDay = (d) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', timeZone: CET }).format(d).toUpperCase();

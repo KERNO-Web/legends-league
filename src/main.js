@@ -4,7 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CustomEase } from 'gsap/CustomEase';
 import { initCrystal } from './fx/crystal.js';
 import { TEAMS, ZONES, TWITCH_URL, RULES_URL, SEASON_START, MATCH_MINUTES } from './data.js';
-import { snapshotDays, loadDays, isDecided } from './schedule.js';
+import { snapshotDays, loadDays, isDecided, scoreText } from './schedule.js';
 
 // «Сейчас»: можно подменить для показа/проверки — ?now=2026-11-20T10:30:00Z
 const NOW_SHIFT = (() => { try { const v = new URLSearchParams(location.search).get('now'); const t = v && Date.parse(v); return t ? t - Date.now() : 0; } catch { return 0; } })();
@@ -183,8 +183,13 @@ function rowHTML(m, dayLabel, t) {
     ${sides}<span class="time"><span class="live-badge"><i aria-hidden="true"></i>LIVE</span>${m.score ? `<span class="score score--live">${m.score[0]}<i>:</i>${m.score[1]}</span>` : ''}</span></a>`;
   // сыгран: вместо времени счёт (в Results под счётом дата, там дни вперемешку).
   // Недоигранный счёт (заранее вписанный 0-0 или забытый 1:0) за итог не выдаём — там время.
-  if (isDecided(m)) return `<article class="match shape is-done has-score" aria-label="${esc(names)}, ${m.score.join(':')}, ${fmtDay(m.at)}">
-    ${sides}<span class="time"><span><span class="score">${m.score[0]}<i>:</i>${m.score[1]}</span>${dayLabel ? '' : `<small class="time__day">${fmtDay(m.at)}</small>`}</span></span></article>`;
+  if (isDecided(m)) {
+    const sc = scoreText(m);
+    // техпоражение: W у победителя, FF у не явившегося и подпись Forfeit под счётом
+    const note = m.forfeit ? 'Forfeit' : dayLabel ? '' : fmtDay(m.at);
+    return `<article class="match shape is-done has-score${m.forfeit ? ' is-ff' : ''}" aria-label="${esc(names)}, ${m.forfeit ? 'forfeit ' : ''}${sc.join(':')}, ${fmtDay(m.at)}">
+    ${sides}<span class="time"><span><span class="score">${sc[0]}<i>:</i>${sc[1]}</span>${note ? `<small class="time__day">${note}</small>` : ''}</span></span></article>`;
+  }
   // дата под временем: если день по выбранному поясу другой, а в Results — всегда
   const shift = !dayLabel || fmtDay(m.at) !== dayLabel ? `<small class="time__day">${fmtDay(m.at)}</small>` : '';
   return `<article class="match shape${st === 'done' ? ' is-done' : ''}" aria-label="${esc(names)}, ${fmtTime(m.at)} ${state.zone.label}">
@@ -315,7 +320,7 @@ addEventListener('resize', inks);
 
 // живые данные: сразу и потом раз в 2 минуты; перерисовка только если что-то поменялось
 let lastSig = '';
-const sig = () => JSON.stringify(DAYS.map((d) => [d.id, d.matches.map((m) => [m.a?.name, m.b?.name, +m.at, m.score, matchState(m, now())])]));
+const sig = () => JSON.stringify(DAYS.map((d) => [d.id, d.matches.map((m) => [m.a?.name, m.b?.name, +m.at, m.score, m.forfeit, matchState(m, now())])]));
 // перерисовка, если поменялись данные или наступило время (матч начался/кончился) — без запроса к таблице
 function rerender() {
   const s = sig();
