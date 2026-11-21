@@ -31,7 +31,7 @@
 </head>
 <body>
 <script type="module">
-  import { gsap, cssUrl, el, at, pic, days, fmtTime, fmtLongDay, wantedDay, teamLogo, q, now } from './hud.js';
+  import { gsap, accent, cssUrl, el, at, pic, days, fmtTime, fmtLongDay, wantedDay, teamLogo, q, now } from './hud.js';
   import { board, crystal } from './board.js';
   await document.fonts.ready;
 
@@ -126,15 +126,17 @@
       .fromTo(A, { opacity: 0, x: -120 }, { opacity: 1, x: 0, duration: 1, ease: 'main' }, 1.05)
       .fromTo(Bt, { opacity: 0, x: 120 }, { opacity: 1, x: 0, duration: 1, ease: 'main' }, 1.05)
       .fromTo(v, { scale: 2, opacity: 0, filter: 'blur(8px)' }, { scale: 1, opacity: 1, filter: 'blur(0px)', duration: 0.7, ease: 'main' }, 1.35);
-    gsap.to(v, { textShadow: '0 0 30px rgba(242,203,117,.7)', duration: 1.6, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: 2.5 });
   }
 
-  // holo-волна по логотипам команд по очереди
+  // holo-волна по логотипам команд — один проход в общей очереди бликов
   const holos = [...C.querySelectorAll('.holo')];
-  const ht = gsap.timeline({ delay: 3, repeat: -1, repeatDelay: 6 });
-  holos.forEach((h, i) => {
-    ht.fromTo(h, { backgroundPosition: '-400px 0', opacity: 0 }, { backgroundPosition: '200px 0', duration: 1.2, ease: 'sine.inOut' }, i * 0.18)
-      .to(h, { opacity: 0.9, duration: 0.4 }, i * 0.18).to(h, { opacity: 0, duration: 0.5 }, i * 0.18 + 0.7);
+  accent(() => {
+    const ht = gsap.timeline();
+    holos.forEach((h, i) => {
+      ht.fromTo(h, { backgroundPosition: '-400px 0', opacity: 0 }, { backgroundPosition: '200px 0', duration: 1.3, ease: 'sine.inOut' }, i * 0.2)
+        .to(h, { opacity: 0.85, duration: 0.4 }, i * 0.2).to(h, { opacity: 0, duration: 0.6 }, i * 0.2 + 0.7);
+    });
+    return ht;
   });
 </script>
 </body>

@@ -1,5 +1,5 @@
 // Рамки под камеры (кастеры, студия): фон с прозрачными окнами, золотой кант, кристаллы по углам.
-import { gsap, cssUrl, stage, el, at, pic, brand, social, sponsors, motes, holo, replayOnShow } from './hud.js';
+import { gsap, accent, cssUrl, stage, el, at, pic, brand, social, sponsors, motes, holo, replayOnShow } from './hud.js';
 
 const css = `
 .fr-bg { position: absolute; inset: 0; background: url(img/bg-frame.webp) 0 0 / 1920px 1080px; }
@@ -58,22 +58,14 @@ export function frameScene({ windows, plates = [], crystals = [], brandAt, brand
   motes(S, 14, [0, 0, 1920, 1080]);
 
   // петли: кристаллы парят, по ним проходит свет, по спонсорам — holo-волна
-  crs.forEach(({ c, sw }, i) => {
-    gsap.to(c, { y: '+=12', rotation: `+=${i % 2 ? -1.5 : 1.5}`, duration: 5.5 + i * 0.7, ease: 'sine.inOut', yoyo: true, repeat: -1 });
-    gsap.timeline({ delay: 2.2 + i * 0.5, repeat: -1, repeatDelay: 7 })
-      .set(sw, { opacity: 1, backgroundPosition: '100% 0' })
-      .to(sw, { backgroundPosition: '0% 0', duration: 1.6, ease: 'sine.inOut' })
-      .set(sw, { opacity: 0 });
+  // кристаллы медленно парят; свет по ним — один проход в общей очереди бликов (без бегущих искр по рамкам)
+  crs.forEach(({ c }, i) => {
+    gsap.to(c, { y: '+=12', rotation: `+=${i % 2 ? -1.5 : 1.5}`, duration: 6.5 + i * 0.8, ease: 'sine.inOut', yoyo: true, repeat: -1 });
   });
-  if (sp) holo(sp, { delay: 3, every: 9 });
-  // по канту окон иногда пробегает золотая искра
-  outlines.forEach((p, i) => {
-    const len = p.getTotalLength();
-    const spark = p.cloneNode(); spark.setAttribute('stroke', '#fff1cc'); spark.setAttribute('stroke-width', '4'); spark.style.filter = 'drop-shadow(0 0 6px rgba(255,214,150,.9))';
-    spark.setAttribute('stroke-dasharray', `120 ${len}`); svg.appendChild(spark);
-    gsap.fromTo(spark, { strokeDashoffset: 0, opacity: 0 }, { strokeDashoffset: -len, duration: 6, ease: 'none', repeat: -1, delay: 2 + i * 0.6 });
-    gsap.to(spark, { opacity: 0.9, duration: 0.6, delay: 2 + i * 0.6 });
-  });
+  if (crs.length) accent(() => gsap.timeline().set(crs.map((x) => x.sw), { opacity: 1, backgroundPosition: '100% 0' })
+    .to(crs.map((x) => x.sw), { backgroundPosition: '0% 0', duration: 1.8, ease: 'sine.inOut', stagger: 0.35 })
+    .set(crs.map((x) => x.sw), { opacity: 0 }));
+  if (sp) holo(sp);
 
   // вход: кант прорисовывается, кристаллы влетают, плашки выезжают
   const tl = gsap.timeline();

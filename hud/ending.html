@@ -24,16 +24,16 @@
     extra(S, fx) {
       // трофей светится изнутри
       const g = at(el('div', 'glow', fx), 1150, 180, 700, 620);
-      gsap.fromTo(g, { opacity: 0.18 }, { opacity: 0.42, duration: 3.6, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+      gsap.fromTo(g, { opacity: 0.22 }, { opacity: 0.36, duration: 8, ease: 'sine.inOut', yoyo: true, repeat: -1 });
       // золотые хлопья медленно падают и вращаются
-      for (let i = 0; i < 26; i++) {
+      for (let i = 0; i < 12; i++) {
         const f = el('i', '', fx);
         const w = 8 + Math.random() * 14;
         Object.assign(f.style, { position: 'absolute', left: 0, top: 0, width: w + 'px', height: w * 0.55 + 'px', background: 'linear-gradient(135deg,#fff3c4,#e0a94a 60%,#9a6a22)', clipPath: 'polygon(0 50%,40% 0,100% 50%,60% 100%)', opacity: 0, mixBlendMode: 'screen' });
-        const x = 900 + Math.random() * 1000, d = 7 + Math.random() * 7;
+        const x = 900 + Math.random() * 1000, d = 12 + Math.random() * 8;
         gsap.timeline({ repeat: -1, delay: -Math.random() * d })
           .fromTo(f, { x, y: -40, rotation: Math.random() * 360 }, { x: x + (Math.random() - 0.5) * 220, y: 1000, rotation: '+=' + (200 + Math.random() * 300), duration: d, ease: 'none' }, 0)
-          .to(f, { opacity: 0.85, duration: 1, ease: 'sine.out' }, 0)
+          .to(f, { opacity: 0.6, duration: 2, ease: 'sine.out' }, 0)
           .to(f, { opacity: 0, duration: 1.5, ease: 'sine.in' }, d - 1.5);
       }
     },

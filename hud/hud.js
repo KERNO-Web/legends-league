@@ -161,30 +161,37 @@ export function motes(S, n, box) {
   }
   return L;
 }
-// звёзды-вспышки: [x, y, масштаб]
-export function flares(S, pts, every = 7) {
-  return pts.map(([x, y, k = 1], i) => {
-    const f = at(el('div', 'flare', S, '<b></b><s></s><u></u>'), x, y);
-    gsap.set(f, { scale: k * 0.45, opacity: 0.3, rotation: rnd() * 20 - 10 });
-    gsap.timeline({ repeat: -1, repeatDelay: every - 1.4, delay: 1.5 + i * (every / pts.length) })
-      .to(f, { scale: k * 1.05, opacity: 1, rotation: '+=14', duration: 0.5, ease: 'sine.out' })
-      .to(f, { scale: k * 0.45, opacity: 0.3, rotation: '+=10', duration: 0.9, ease: 'sine.in' });
-    return f;
-  });
+// ---------- акценты: по одному, с длинной паузой ----------
+// Блики (по арту, заголовку, спонсорам, логотипам) не крутятся каждый сам по себе — иначе всё мигает разом.
+// Сцена регистрирует их в очередь, и они идут строго по одному: первый через 6 с после входа, дальше каждые 12 с.
+const ACC = [];
+let accStarted = false;
+export const ACCENT_GAP = 12;
+export function accent(make) {
+  ACC.push(make);
+  if (accStarted) return;
+  accStarted = true;
+  let i = 0;
+  const run = () => { if (ACC.length) ACC[i++ % ACC.length](); gsap.delayedCall(ACCENT_GAP, run); };
+  gsap.delayedCall(6, run);
 }
-// перелив: копия арта по светлым граням плавно сдвигает оттенок
-export function shimmer(sh, amp = 26, dur = 9) {
+
+// звёзды-вспышки убраны (мигали) — вызов оставлен, чтобы сцены не падали
+export function flares() { return []; }
+// перелив: копия арта по светлым граням очень медленно сдвигает оттенок
+export function shimmer(sh, amp = 14, dur = 18) {
   const o = { h: -amp };
-  gsap.to(o, { h: amp, duration: dur, ease: 'sine.inOut', yoyo: true, repeat: -1, onUpdate: () => { sh.style.filter = `hue-rotate(${o.h.toFixed(1)}deg) saturate(1.15) brightness(1.08)`; } });
-  gsap.fromTo(sh, { opacity: 0.35 }, { opacity: 0.7, duration: dur * 0.7, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+  gsap.to(o, { h: amp, duration: dur, ease: 'sine.inOut', yoyo: true, repeat: -1, onUpdate: () => { sh.style.filter = `hue-rotate(${o.h.toFixed(1)}deg) saturate(1.1) brightness(1.05)`; } });
+  gsap.fromTo(sh, { opacity: 0.35 }, { opacity: 0.55, duration: dur * 0.8, ease: 'sine.inOut', yoyo: true, repeat: -1 });
 }
-// фронт света по светлым граням; from/to — x центра полосы
+// фронт света по светлым граням; from/to — x центра полосы. every > 0 — в очередь акцентов
 export function sweep(sw, { delay = 0, dur = 2.4, every = 0, from = 500, to = 2300 } = {}) {
-  const tl = gsap.timeline({ delay, repeat: every ? -1 : 0, repeatDelay: every });
-  tl.set(sw, { opacity: 1, backgroundPosition: `${from - 2880}px 0` })
+  const once = (d = 0) => gsap.timeline({ delay: d })
+    .set(sw, { opacity: 1, backgroundPosition: `${from - 2880}px 0` })
     .to(sw, { backgroundPosition: `${to - 2880}px 0`, duration: dur, ease: 'none' })
     .set(sw, { opacity: 0 });
-  return tl;
+  if (every) { accent(() => once()); return null; }
+  return once(delay);
 }
 // медленный «вдох» камеры по арту
 export function drift(e, { s = 1.035, x = -14, y = -8, dur = 16 } = {}) {
@@ -194,31 +201,33 @@ export function drift(e, { s = 1.035, x = -14, y = -8, dur = 16 } = {}) {
 export function float(e, { y = 12, r = 1.2, x = 0, dur = 6, delay = 0 } = {}) {
   gsap.to(e, { y: `+=${y}`, x: `+=${x}`, rotation: `+=${r}`, duration: dur, ease: 'sine.inOut', yoyo: true, repeat: -1, delay });
 }
-// holo-волна по спонсорам — как по логотипам команд на сайте
-export function holo(sp, { delay = 2.4, every = 9 } = {}) {
-  const hs = [...sp.querySelectorAll('.holo')];
-  const tl = gsap.timeline({ delay, repeat: -1, repeatDelay: every });
+// holo-волна по набору логотипов (маска — сама картинка, подходит к любому логотипу)
+export function holoOnce(hs) {
+  const tl = gsap.timeline();
   hs.forEach((h, i) => {
-    tl.fromTo(h, { backgroundPosition: '-1600px 0', opacity: 0 }, { backgroundPosition: '0px 0', duration: 1.5, ease: 'sine.inOut' }, i * 0.25)
-      .to(h, { opacity: 1, duration: 0.5, ease: 'sine.out' }, i * 0.25)
-      .to(h, { opacity: 0, duration: 0.6, ease: 'sine.in' }, i * 0.25 + 0.9);
+    tl.fromTo(h, { backgroundPosition: '-1600px 0', opacity: 0 }, { backgroundPosition: '0px 0', duration: 1.6, ease: 'sine.inOut' }, i * 0.3)
+      .to(h, { opacity: 0.9, duration: 0.5, ease: 'sine.out' }, i * 0.3)
+      .to(h, { opacity: 0, duration: 0.7, ease: 'sine.in' }, i * 0.3 + 0.9);
   });
   return tl;
 }
-// блик бежит по золотой линии
-export function lineSpark(g, { delay = 3, every = 8 } = {}) {
-  const sp = g.querySelector('.spark'), w = g.offsetWidth || parseFloat(g.style.width);
-  gsap.timeline({ delay, repeat: -1, repeatDelay: every })
-    .fromTo(sp, { x: 0, opacity: 0 }, { x: w, duration: 1.3, ease: 'power1.inOut' })
-    .to(sp, { opacity: 1, duration: 0.35, ease: 'sine.out' }, 0)
-    .to(sp, { opacity: 0, duration: 0.4, ease: 'sine.in' }, 0.9);
+// holo-волна по спонсорам — в очередь акцентов
+export function holo(sp) { const hs = [...sp.querySelectorAll('.holo')]; accent(() => holoOnce(hs)); }
+// блик бежит по золотой линии — в очередь акцентов
+export function lineSpark(g) {
+  const sp = g.querySelector('.spark');
+  accent(() => {
+    const w = g.offsetWidth || parseFloat(g.style.width);
+    return gsap.timeline()
+      .fromTo(sp, { x: 0, opacity: 0 }, { x: w, duration: 1.4, ease: 'power1.inOut' })
+      .to(sp, { opacity: 1, duration: 0.35, ease: 'sine.out' }, 0)
+      .to(sp, { opacity: 0, duration: 0.45, ease: 'sine.in' }, 0.95);
+  });
 }
-// блик по буквам заголовка: светлая полоса проходит по тексту
-export function titleGlint(t, { delay = 2, every = 8 } = {}) {
-  // полоса света проходит внутри букв по всему заголовку
+// блеск внутри букв заголовка — в очередь акцентов
+export function titleGlint(t) {
   const w = () => t.offsetWidth || 1000;
-  return gsap.timeline({ delay, repeat: -1, repeatDelay: every })
-    .fromTo(t, { '--shine': () => -w() * 0.7 + 'px' }, { '--shine': () => w() * 1.1 + 'px', duration: 1.7, ease: 'sine.inOut' });
+  accent(() => gsap.fromTo(t, { '--shine': -w() * 0.7 + 'px' }, { '--shine': w() * 1.1 + 'px', duration: 1.8, ease: 'sine.inOut' }));
 }
 
 // ---------- вход ----------

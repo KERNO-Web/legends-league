@@ -31,10 +31,11 @@ export function board({ head, date, ruleY = 943, bg = 'img/bg-stage.webp', mask 
   const so = social(S), sp = sponsors(S);
   const content = el('div', 'layer', S);
 
-  sweep(sw, { delay: 5, dur: 2.6, every: 10, from: 300, to: 2400 });
-  holo(sp, { delay: 3, every: 9 });
-  if (DL) lineSpark(DL, { delay: 3.6, every: 9 });
-  titleGlint(H, { delay: 1.6, every: 8 });
+  // блики — по одному из очереди акцентов
+  titleGlint(H);
+  sweep(sw, { dur: 2.8, every: 1, from: 300, to: 2400 });
+  holo(sp);
+  if (DL) lineSpark(DL);
 
   const tl = gsap.timeline();
   tl.fromTo(bgW, { opacity: 0, scale: 1.04 }, { opacity: 1, scale: 1, duration: 1.2, ease: 'main' }, 0);

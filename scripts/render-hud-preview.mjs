@@ -7,7 +7,7 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 
 const base = process.argv[2] || 'http://localhost:5195/hud/';
-const FPS = 30, SEC = 11;
+const FPS = 30, SEC = 20;
 const out = path.resolve('release/LPL-S5-HUD/preview');
 mkdirSync(out, { recursive: true });
 const list = [

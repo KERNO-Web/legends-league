@@ -21,11 +21,16 @@ export function sideScene(cfg) {
   drift(A.cam, cfg.drift);
   shimmer(A.shimmer, cfg.hue ?? 26);
   if (cfg.motes) motes(fx, cfg.motes[0], cfg.motes[1]);
-  if (cfg.flares) flares(fx, cfg.flares, cfg.flareEvery ?? 7);
-  holo(sp, { delay: 3, every: 9 });
-  lineSpark(G, { delay: 3.4, every: 8 });
-  titleGlint(T, { delay: 1.9, every: 7 });
-  sweep(A.sweep, { delay: 6, dur: 2.6, every: 9 });
+  // дымка у пола (её просили оставить), если у сцены нет своей
+  if (cfg.fog !== false) {
+    const f1 = at(el('div', 'fog', fx), 0, 760); f1.style.height = '300px';
+    gsap.fromTo(f1, { xPercent: -5, opacity: 0.3 }, { xPercent: 5, opacity: 0.5, duration: 16, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+  }
+  // блики — по одному из очереди акцентов: арт → заголовок → спонсоры → линия
+  sweep(A.sweep, { dur: 2.8, every: 1 });
+  titleGlint(T);
+  holo(sp);
+  lineSpark(G);
 
   // вход
   const tl = gsap.timeline();
