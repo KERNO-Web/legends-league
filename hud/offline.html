@@ -24,7 +24,7 @@
     extra(S, fx) {
       // свет из щели дверей «дышит»
       const door = at(el('div', 'glow', fx), 1300, 330, 300, 520);
-      gsap.fromTo(door, { opacity: 0.3, scaleY: 0.96 }, { opacity: 0.5, scaleY: 1.02, duration: 7, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+      gsap.fromTo(door, { opacity: 0.3 }, { opacity: 0.5, duration: 7, ease: 'sine.inOut', yoyo: true, repeat: -1 });
       // туман стелется по полу двумя слоями навстречу
       const f1 = at(el('div', 'fog', fx), 0, 690); f1.style.height = '300px';
       const f2 = at(el('div', 'fog', fx), 0, 760); f2.style.height = '260px';

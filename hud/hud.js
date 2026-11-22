@@ -194,8 +194,8 @@ export function sweep(sw, { delay = 0, dur = 2.4, every = 0, from = 500, to = 23
   return once(delay);
 }
 // медленный «вдох» камеры по арту
-export function drift(e, { s = 1.035, x = -14, y = -8, dur = 16 } = {}) {
-  gsap.fromTo(e, { scale: 1, x: 0, y: 0 }, { scale: s, x, y, duration: dur, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+export function drift() {
+  // «дыхание» камеры (масштаб) убрано по просьбе лиги: ничего не должно сжиматься и разжиматься
 }
 // парение слоя (кристаллы, персонажи)
 export function float(e, { y = 12, r = 1.2, x = 0, dur = 6, delay = 0 } = {}) {
@@ -250,7 +250,7 @@ export function inSub(tl, e, pos) {
 }
 // арт «пробуждается»: из темноты и чуть ближе
 export function inArt(tl, wrap, pos = 0) {
-  tl.fromTo(wrap, { opacity: 0, scale: 1.06, filter: 'brightness(.35) saturate(.6)' }, { opacity: 1, scale: 1, filter: 'brightness(1) saturate(1)', duration: 1.6, ease: 'main' }, pos);
+  tl.fromTo(wrap, { opacity: 0, filter: 'brightness(.35) saturate(.6)' }, { opacity: 1, filter: 'brightness(1) saturate(1)', duration: 1.6, ease: 'main' }, pos);
 }
 
 // повторить вход, когда OBS снова показывает сцену (без перезагрузки источника)

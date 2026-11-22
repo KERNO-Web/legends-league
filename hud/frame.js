@@ -44,8 +44,11 @@ export function frameScene({ windows, plates = [], crystals = [], brandAt, brand
     return t;
   });
 
+  // всё живое (кристаллы, пыль) лежит в слое с той же маской, что и фон: внутрь окон камер ничего не заходит
+  const deco = el('div', 'layer', S);
+  deco.style.webkitMask = deco.style.mask = bg.style.mask;
   const crs = crystals.map(([src, x, y, w, rot = 0, flip = false]) => {
-    const c = at(el('div', 'cr', S), x, y, w);
+    const c = at(el('div', 'cr', deco), x, y, w);
     pic(src, '', c);
     const sw = el('i', 'sw', c); sw.style.setProperty('--m', cssUrl(src));
     gsap.set(c, { rotation: rot, scaleX: /x/.test(flip || '') ? -1 : 1, scaleY: /y/.test(flip || '') ? -1 : 1, transformOrigin: '50% 50%' });
@@ -55,7 +58,7 @@ export function frameScene({ windows, plates = [], crystals = [], brandAt, brand
   let so = null, sp = null;
   if (foot) { so = social(S); sp = sponsors(S); }
   if (topSponsors) { sp = sponsors(S, topSponsors[0], topSponsors[1], false); sp.style.gap = topSponsors[2] + 'px'; }
-  motes(S, 14, [0, 0, 1920, 1080]);
+  motes(deco, 14, [0, 0, 1920, 1080]);
 
   // петли: кристаллы парят, по ним проходит свет, по спонсорам — holo-волна
   // кристаллы медленно парят; свет по ним — один проход в общей очереди бликов (без бегущих искр по рамкам)

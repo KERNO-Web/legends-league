@@ -26,6 +26,15 @@
     .stack .lg { position: relative; }
     .stack .nm { font-weight: 700; text-transform: uppercase; text-align: center; white-space: nowrap; }
     .glines { position: absolute; height: 3px; background: var(--gold); }
+    /* VS всегда ровно между командами, с одинаковыми отступами, как бы ни были длинны названия */
+    .pair { position: absolute; top: 0; height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; }
+    .pair .tm { position: relative; }
+    .pair .tm.a { justify-self: end; }
+    .pair .tm.b { justify-self: start; }
+    .pair .vs2 { color: var(--gold); font-weight: 800; }
+    .duo { position: absolute; display: flex; align-items: flex-start; transform: translateX(-50%); }
+    .duo .stack { position: relative; transform: none; }
+    .duo .vs2 { color: var(--gold); font-weight: 800; line-height: 1; }
     .char { position: absolute; pointer-events: none; will-change: transform; }
   </style>
 </head>
@@ -48,8 +57,8 @@
   const name = (t) => (t ? t.name : 'TBD');
   const fit = (s, big, small, lim = 12) => (s.length > lim ? small : big);
 
-  function team(parent, t, x, y, size, nameSize, gap, maxW = 300) {
-    const w = el('div', 'tm', parent); at(w, x, y); w.style.gap = gap + 'px'; w.style.height = size + 'px';
+  function team(parent, t, size, nameSize, gap, maxW, cls) {
+    const w = el('div', 'tm ' + cls, parent); w.style.gap = gap + 'px'; w.style.height = size + 'px';
     const lg = el('div', 'lg', w); lg.style.width = lg.style.height = size + 'px';
     const src = teamLogo(t);
     if (src) { pic(src, '', lg); const h = el('i', 'holo', lg); h.style.setProperty('--m', cssUrl(src)); }
@@ -59,8 +68,8 @@
     nm.style.maxWidth = maxW + 'px'; nm.style.whiteSpace = long ? 'normal' : 'nowrap';
     return w;
   }
-  function stackTeam(parent, t, cx, y, size, nameSize) {
-    const w = el('div', 'stack', parent); at(w, cx, y);
+  function stackTeam(parent, t, size, nameSize) {
+    const w = el('div', 'stack', parent);
     const lg = el('div', 'lg', w); lg.style.width = lg.style.height = size + 'px';
     const src = teamLogo(t);
     if (src) { pic(src, '', lg).style.cssText = 'width:100%;height:100%;object-fit:contain'; const h = el('i', 'holo', lg); h.style.setProperty('--m', cssUrl(src)); h.style.cssText += ';position:absolute;inset:0;opacity:0;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;background:linear-gradient(115deg,transparent 0 40%,rgba(255,139,216,.95) 45%,#ffe1a8 47.5%,#8bffd9 50%,#7ad8ff 52.5%,#b47cff 55%,transparent 60% 100%);background-size:300% 100%'; }
@@ -74,7 +83,7 @@
     const four = n === 4;
     const ch = pic(four ? 'img/char-2.webp' : 'img/char-1.webp', 'char', K);
     Object.assign(ch.style, four ? { left: '760px', top: '-20px', height: '1110px' } : { left: '1080px', top: '20px', height: '1060px' });
-    gsap.to(ch, { y: -10, scale: 1.012, duration: 5, ease: 'sine.inOut', yoyo: true, repeat: -1, transformOrigin: '50% 100%' });
+    gsap.to(ch, { y: -10, duration: 6, ease: 'sine.inOut', yoyo: true, repeat: -1 });
     tl.fromTo(ch, { opacity: 0, x: 80 }, { opacity: 1, x: 0, duration: 1.3, ease: 'main' }, 0.35);
     const G = four ? { x: 47, w: 1203, h: 112, ys: [330, 476, 622, 768], tx: 46, dv: 331, l1: 368, n1: 463, vs: 743, l2: 815, n2: 910, lg: 70, nm: 36, tm: 50 }
                    : { x: 75, w: 1205, h: 157, ys: [345, 536, 727], tx: 47, dv: 332, l1: 370, n1: 465, vs: 712, l2: 818, n2: 915, lg: 74, nm: 38, tm: 52 };
@@ -84,14 +93,17 @@
       const r = at(el('div', 'row chamfer', C), G.x, G.ys[i], G.w, G.h);
       const t = at(el('div', 'time', r, time(m)), G.tx, 0); t.style.cssText += `;top:50%;transform:translateY(-50%);font-size:${G.tm}px`;
       const d = at(el('i', 'div', r), G.dv, G.h * 0.2); d.style.height = G.h * 0.6 + 'px';
-      team(r, m?.a, G.l1, (G.h - G.lg) / 2, G.lg, G.nm, G.n1 - G.l1 - G.lg, G.vs - G.n1 - 46);
-      const v = at(el('div', 'vsx', r, 'VS'), G.vs, 0); v.style.cssText += `;top:50%;transform:translate(-50%,-50%);font-size:${G.tm - 6}px`;
-      team(r, m?.b, G.l2, (G.h - G.lg) / 2, G.lg, G.nm, G.n2 - G.l2 - G.lg, G.w - G.n2 - 30);
+      // пара команд: [лого имя] VS [лого имя], VS в центре своей зоны, отступы до него одинаковые
+      const pr = el('div', 'pair', r); pr.style.left = G.dv + 30 + 'px'; pr.style.width = G.w - G.dv - 60 + 'px'; pr.style.columnGap = '34px';
+      const half = (G.w - G.dv - 60 - 34 * 2 - 70) / 2 - G.lg - 22;
+      team(pr, m?.a, G.lg, G.nm, 22, half, 'a');
+      const v = el('div', 'vs2', pr, 'VS'); v.style.fontSize = G.tm - 6 + 'px';
+      team(pr, m?.b, G.lg, G.nm, 22, half, 'b');
       rows.push(r);
     }
     rows.forEach((r, i) => {
       tl.fromTo(r, { clipPath: 'inset(0 100% 0 0)', x: -30 }, { clipPath: 'inset(0 0% 0 0)', x: 0, duration: 0.9, ease: 'main' }, 0.75 + i * 0.12);
-      tl.fromTo(r.querySelectorAll('.lg'), { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(1.6)', stagger: 0.08 }, 1.05 + i * 0.12);
+      tl.fromTo(r.querySelectorAll('.lg'), { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'main', stagger: 0.08 }, 1.05 + i * 0.12);
     });
     crystal(K, 'img/crystal-b.webp', four ? 1080 : 1150, -40, 420, { rot: -8, amp: 9, dur: 6.5 });
   } else if (n === 2) {
@@ -104,28 +116,31 @@
       const m = list[i];
       const c = at(el('div', 'card chamfer', C), x, 358, w, 450);
       at(el('div', 'ttl', c, time(m)), 0, 62);
-      stackTeam(c, m?.a, w * 0.22, 146, 150, 40);
-      stackTeam(c, m?.b, w * 0.78, 146, 150, 40);
-      const v = at(el('div', 'vsx', c, 'VS'), w / 2, 196); v.style.fontSize = '72px';
+      const duo = at(el('div', 'duo', c), w / 2, 146); duo.style.gap = '56px';
+      stackTeam(duo, m?.a, 150, 40);
+      const v = el('div', 'vs2', duo, 'VS'); v.style.cssText += ';font-size:72px;margin-top:39px';
+      stackTeam(duo, m?.b, 150, 40);
       tl.fromTo(c, { opacity: 0, y: 40, clipPath: 'inset(50% 0 50% 0)' }, { opacity: 1, y: 0, clipPath: 'inset(0% 0 0% 0)', duration: 1, ease: 'main' }, 0.8 + i * 0.15);
       tl.fromTo(c.querySelectorAll('.stack'), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, ease: 'main', stagger: 0.1 }, 1.2 + i * 0.15);
-      tl.fromTo(v, { scale: 1.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: 'main' }, 1.4 + i * 0.15);
+      tl.fromTo(v, { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.6, ease: 'main' }, 1.4 + i * 0.15);
     });
   } else {
     // один матч в кристальной рамке
     const m = list[0];
     const fr = pic('img/frame-crystal.webp', 'crystal', C);
     Object.assign(fr.style, { left: '14px', top: '262px', width: '1888px' });
-    gsap.to(fr, { scale: 1.006, duration: 4, ease: 'sine.inOut', yoyo: true, repeat: -1 });
-    tl.fromTo(fr, { opacity: 0, scale: 0.94, filter: 'brightness(2.2) blur(6px)' }, { opacity: 1, scale: 1, filter: 'brightness(1) blur(0px)', duration: 1.3, ease: 'main' }, 0.5);
+    // рамка не «дышит» и не сжимается — только проявляется со вспышкой
+    tl.fromTo(fr, { opacity: 0, filter: 'brightness(2.2) blur(6px)' }, { opacity: 1, filter: 'brightness(1) blur(0px)', duration: 1.3, ease: 'main' }, 0.5);
     const tt = at(el('div', 'time', C, time(m)), 960, 384); tt.style.cssText += ';transform:translateX(-50%);color:var(--gold);font-size:58px';
     const l1 = at(el('i', 'glines', C), 615, 413, 100), l2 = at(el('i', 'glines', C), 1205, 413, 100);
-    const A = stackTeam(C, m?.a, 520, 462, 210, 58), Bt = stackTeam(C, m?.b, 1400, 462, 210, 58);
-    const v = at(el('div', 'vsx', C, 'VS'), 960, 580); v.style.fontSize = '92px';
+    const duo = at(el('div', 'duo', C), 960, 462); duo.style.gap = '90px';
+    const A = stackTeam(duo, m?.a, 210, 58);
+    const v = el('div', 'vs2', duo, 'VS'); v.style.cssText += ';font-size:92px;margin-top:59px';
+    const Bt = stackTeam(duo, m?.b, 210, 58);
     tl.fromTo([tt, l1, l2], { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.6, ease: 'main', stagger: 0.08 }, 1.0)
       .fromTo(A, { opacity: 0, x: -120 }, { opacity: 1, x: 0, duration: 1, ease: 'main' }, 1.05)
       .fromTo(Bt, { opacity: 0, x: 120 }, { opacity: 1, x: 0, duration: 1, ease: 'main' }, 1.05)
-      .fromTo(v, { scale: 2, opacity: 0, filter: 'blur(8px)' }, { scale: 1, opacity: 1, filter: 'blur(0px)', duration: 0.7, ease: 'main' }, 1.35);
+      .fromTo(v, { opacity: 0, filter: 'blur(8px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.7, ease: 'main' }, 1.35);
   }
 
   // holo-волна по логотипам команд — один проход в общей очереди бликов

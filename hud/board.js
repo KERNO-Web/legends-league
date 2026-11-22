@@ -38,7 +38,7 @@ export function board({ head, date, ruleY = 943, bg = 'img/bg-stage.webp', mask 
   if (DL) lineSpark(DL);
 
   const tl = gsap.timeline();
-  tl.fromTo(bgW, { opacity: 0, scale: 1.04 }, { opacity: 1, scale: 1, duration: 1.2, ease: 'main' }, 0);
+  tl.fromTo(bgW, { opacity: 0 }, { opacity: 1, duration: 1.2, ease: 'main' }, 0);
   tl.add(sweep(sw, { dur: 1.8, from: 300, to: 2400 }), 0.2);
   inTitle(tl, H, 0.25);
   inSub(tl, D, 0.6);
